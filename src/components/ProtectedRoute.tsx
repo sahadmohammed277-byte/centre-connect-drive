@@ -1,9 +1,15 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import StaffDashboard from "./StaffDashboard";
-import AdminDashboard from "./AdminDashboard";
+import type { Database } from "@/integrations/supabase/types";
 
-export default function Index() {
+type AppRole = Database["public"]["Enums"]["app_role"];
+
+interface Props {
+  children: React.ReactNode;
+  requiredRole?: AppRole;
+}
+
+export default function ProtectedRoute({ children, requiredRole }: Props) {
   const { user, role, loading } = useAuth();
 
   if (loading) {
@@ -15,7 +21,7 @@ export default function Index() {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+  if (requiredRole && role !== requiredRole) return <Navigate to="/" replace />;
 
-  if (role === "admin") return <AdminDashboard />;
-  return <StaffDashboard />;
+  return <>{children}</>;
 }
