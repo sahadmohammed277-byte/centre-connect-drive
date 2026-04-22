@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -55,6 +82,7 @@ export type Database = {
           created_at: string
           geo_fence_radius_meters: number
           id: string
+          is_active: boolean
           latitude: number
           longitude: number
           name: string
@@ -63,6 +91,7 @@ export type Database = {
           created_at?: string
           geo_fence_radius_meters?: number
           id?: string
+          is_active?: boolean
           latitude: number
           longitude: number
           name: string
@@ -71,6 +100,7 @@ export type Database = {
           created_at?: string
           geo_fence_radius_meters?: number
           id?: string
+          is_active?: boolean
           latitude?: number
           longitude?: number
           name?: string
@@ -256,6 +286,7 @@ export type Database = {
           employee_id: string
           full_name: string
           id: string
+          is_active: boolean
           phone: string | null
           updated_at: string
           user_id: string
@@ -266,6 +297,7 @@ export type Database = {
           employee_id: string
           full_name: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -276,6 +308,7 @@ export type Database = {
           employee_id?: string
           full_name?: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           updated_at?: string
           user_id?: string

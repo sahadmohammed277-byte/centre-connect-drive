@@ -1,7 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import StaffDashboard from "./StaffDashboard";
-import AdminDashboard from "./AdminDashboard";
 
 export default function Index() {
   const { user, role, loading } = useAuth();
@@ -15,7 +14,6 @@ export default function Index() {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-
-  if (role === "admin") return <AdminDashboard />;
+  if (role === "admin") return <Navigate to="/admin" replace />;
   return <StaffDashboard />;
 }
