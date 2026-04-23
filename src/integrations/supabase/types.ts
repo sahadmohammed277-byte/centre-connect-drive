@@ -487,6 +487,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_monthly_claims: {
+        Args: { _claim_month: string }
+        Returns: {
+          claims_created: number
+          claims_updated: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
