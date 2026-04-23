@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -12,7 +13,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
-import { CheckCircle2, XCircle, Eye } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, RefreshCw, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ApprovalsPage() {
@@ -22,16 +23,23 @@ export default function ApprovalsPage() {
   const [centres, setCentres] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [month, setMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [reviewClaim, setReviewClaim] = useState<any | null>(null);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject">("approve");
   const [comments, setComments] = useState("");
+  const [dayBreakdown, setDayBreakdown] = useState<any[]>([]);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
 
   useEffect(() => { void load(); }, []);
 
   async function load() {
     setLoading(true);
     const [cl, p, c] = await Promise.all([
-      supabase.from("monthly_claims").select("*").order("submitted_at", { ascending: false }),
+      supabase.from("monthly_claims").select("*").order("claim_month", { ascending: false }),
       supabase.from("profiles").select("*"),
       supabase.from("centres").select("*"),
     ]);
@@ -39,6 +47,67 @@ export default function ApprovalsPage() {
     setProfiles(p.data || []);
     setCentres(c.data || []);
     setLoading(false);
+  }
+
+  async function generateClaims() {
+    setGenerating(true);
+    const claimMonth = `${month}-01`;
+    const { data, error } = await supabase.rpc("generate_monthly_claims", { _claim_month: claimMonth });
+    setGenerating(false);
+    if (error) return toast.error(error.message);
+    const res = data?.[0];
+    toast.success(`Generated: ${res?.claims_created ?? 0} new, ${res?.claims_updated ?? 0} updated`);
+    void load();
+  }
+
+  async function loadBreakdown(claim: any) {
+    setBreakdownLoading(true);
+    const monthStart = claim.claim_month;
+    const d = new Date(monthStart);
+    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const { data: checkins } = await supabase
+      .from("daily_checkins")
+      .select("id, checkin_date, total_km, status, checkin_time, checkout_time")
+      .eq("user_id", claim.user_id)
+      .gte("checkin_date", monthStart)
+      .lte("checkin_date", monthEnd)
+      .order("checkin_date");
+    const ids = (checkins || []).map((c) => c.id);
+    let visitMap: Record<string, { total: number; doctors: number }> = {};
+    if (ids.length) {
+      const { data: visits } = await supabase
+        .from("visits")
+        .select("checkin_id, visitor_type")
+        .in("checkin_id", ids);
+      (visits || []).forEach((v) => {
+        const k = v.checkin_id;
+        if (!visitMap[k]) visitMap[k] = { total: 0, doctors: 0 };
+        visitMap[k].total++;
+        if (v.visitor_type === "doctor") visitMap[k].doctors++;
+      });
+    }
+    setDayBreakdown((checkins || []).map((c) => ({
+      ...c,
+      total_visits: visitMap[c.id]?.total || 0,
+      doctor_visits: visitMap[c.id]?.doctors || 0,
+    })));
+    setBreakdownLoading(false);
+  }
+
+  function openReview(claim: any, action: "approve" | "reject") {
+    setReviewClaim(claim);
+    setReviewAction(action);
+    setComments("");
+    setDayBreakdown([]);
+    void loadBreakdown(claim);
+  }
+
+  function openDetails(claim: any) {
+    setReviewClaim(claim);
+    setReviewAction("approve");
+    setComments(claim.admin_comments || "");
+    setDayBreakdown([]);
+    void loadBreakdown(claim);
   }
 
   async function submitReview() {
@@ -78,12 +147,23 @@ export default function ApprovalsPage() {
 
   return (
     <>
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div>
+          <Label className="text-xs">Claim Month</Label>
+          <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-44" />
+        </div>
+        <Button onClick={generateClaims} disabled={generating}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${generating ? "animate-spin" : ""}`} />
+          {generating ? "Generating…" : "Generate Monthly Claims"}
+        </Button>
+      </div>
+
       <DataTableShell
         searchValue={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search staff…"
         isEmpty={!loading && filtered.length === 0}
-        emptyMessage="No claim submissions yet."
+        emptyMessage='No claims yet. Click "Generate Monthly Claims" to aggregate daily activity.'
       >
         <Table>
           <TableHeader>
@@ -91,7 +171,9 @@ export default function ApprovalsPage() {
               <TableHead>Staff</TableHead>
               <TableHead>Centre</TableHead>
               <TableHead>Month</TableHead>
+              <TableHead className="text-right">Days</TableHead>
               <TableHead className="text-right">KM</TableHead>
+              <TableHead className="text-right">Dr Visits</TableHead>
               <TableHead className="text-right">TA</TableHead>
               <TableHead className="text-right">DA</TableHead>
               <TableHead className="text-right">Total</TableHead>
@@ -103,30 +185,41 @@ export default function ApprovalsPage() {
             {filtered.map((c) => {
               const p = profiles.find((x) => x.user_id === c.user_id);
               const cn = centres.find((x) => x.id === c.centre_id);
+              const locked = c.status === "approved";
               return (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{p?.full_name || "—"}</TableCell>
                   <TableCell>{cn?.name || "—"}</TableCell>
                   <TableCell>{new Date(c.claim_month).toLocaleString("default", { month: "short", year: "numeric" })}</TableCell>
-                  <TableCell className="text-right">{(c.total_km ?? 0).toFixed(1)}</TableCell>
+                  <TableCell className="text-right">{c.working_days}</TableCell>
+                  <TableCell className="text-right">{Number(c.total_km ?? 0).toFixed(1)}</TableCell>
+                  <TableCell className="text-right">{c.total_doctor_visits}</TableCell>
                   <TableCell className="text-right">₹{Number(c.total_ta).toFixed(0)}</TableCell>
                   <TableCell className="text-right">₹{Number(c.total_da).toFixed(0)}</TableCell>
                   <TableCell className="text-right font-semibold">₹{Number(c.grand_total).toFixed(0)}</TableCell>
-                  <TableCell><StatusBadge status={c.status} /></TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <StatusBadge status={c.status} />
+                      {locked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right space-x-1">
                     {c.status === "submitted" ? (
                       <>
+                        <Button size="sm" variant="ghost" onClick={() => openDetails(c)} title="View">
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10"
-                          onClick={() => { setReviewClaim(c); setReviewAction("approve"); setComments(""); }}>
+                          onClick={() => openReview(c, "approve")} title="Approve">
                           <CheckCircle2 className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                          onClick={() => { setReviewClaim(c); setReviewAction("reject"); setComments(""); }}>
+                          onClick={() => openReview(c, "reject")} title="Reject">
                           <XCircle className="h-4 w-4" />
                         </Button>
                       </>
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => { setReviewClaim(c); setReviewAction("approve"); setComments(c.admin_comments || ""); }}>
+                      <Button size="sm" variant="ghost" onClick={() => openDetails(c)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     )}
@@ -139,7 +232,7 @@ export default function ApprovalsPage() {
       </DataTableShell>
 
       <Dialog open={!!reviewClaim} onOpenChange={() => setReviewClaim(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {reviewClaim?.status === "submitted"
@@ -148,13 +241,54 @@ export default function ApprovalsPage() {
             </DialogTitle>
           </DialogHeader>
           {reviewClaim && (
-            <div className="space-y-3 text-sm">
-              <Row label="KM" value={(reviewClaim.total_km ?? 0).toFixed(1)} />
-              <Row label="TA" value={`₹${Number(reviewClaim.total_ta).toFixed(0)}`} />
-              <Row label="DA" value={`₹${Number(reviewClaim.total_da).toFixed(0)}`} />
-              <Row label="Grand Total" value={`₹${Number(reviewClaim.grand_total).toFixed(0)}`} bold />
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Stat label="Working Days" value={reviewClaim.working_days} />
+                <Stat label="Total KM" value={Number(reviewClaim.total_km ?? 0).toFixed(1)} />
+                <Stat label="Doctor Visits" value={reviewClaim.total_doctor_visits} />
+                <Stat label="DA Eligible Days" value={reviewClaim.da_eligible_days} />
+                <Stat label="TA" value={`₹${Number(reviewClaim.total_ta).toFixed(0)}`} />
+                <Stat label="DA" value={`₹${Number(reviewClaim.total_da).toFixed(0)}`} />
+                <Stat label="Grand Total" value={`₹${Number(reviewClaim.grand_total).toFixed(0)}`} bold />
+                <Stat label="Status" value={reviewClaim.status} />
+              </div>
+
+              <div>
+                <p className="font-medium mb-2">Day-wise Breakdown</p>
+                {breakdownLoading ? (
+                  <p className="text-muted-foreground text-xs">Loading…</p>
+                ) : dayBreakdown.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">No daily activity in this month.</p>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">KM</TableHead>
+                          <TableHead className="text-right">Visits</TableHead>
+                          <TableHead className="text-right">Dr</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {dayBreakdown.map((d) => (
+                          <TableRow key={d.id}>
+                            <TableCell>{new Date(d.checkin_date).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right">{Number(d.total_km ?? 0).toFixed(1)}</TableCell>
+                            <TableCell className="text-right">{d.total_visits}</TableCell>
+                            <TableCell className="text-right">{d.doctor_visits}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{d.status}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
               {reviewClaim.status === "submitted" ? (
-                <div className="space-y-2 pt-2">
+                <div className="space-y-2">
                   <Label>{reviewAction === "reject" ? "Reason (required)" : "Comments (optional)"}</Label>
                   <Textarea value={comments} onChange={(e) => setComments(e.target.value)} rows={3} />
                 </div>
@@ -165,6 +299,11 @@ export default function ApprovalsPage() {
                     {reviewClaim.admin_comments}
                   </div>
                 )
+              )}
+              {reviewClaim.status === "approved" && (
+                <div className="rounded-lg bg-success/10 border border-success/30 p-3 text-xs flex items-center gap-2">
+                  <Lock className="h-3 w-3" /> This claim is approved and locked from edits.
+                </div>
               )}
             </div>
           )}
@@ -189,18 +328,18 @@ export default function ApprovalsPage() {
 function StatusBadge({ status }: { status: string }) {
   const map: any = {
     draft: <Badge variant="outline">Draft</Badge>,
-    submitted: <Badge className="bg-warning text-warning-foreground hover:bg-warning">Pending</Badge>,
+    submitted: <Badge className="bg-warning text-warning-foreground hover:bg-warning">Submitted</Badge>,
     approved: <Badge className="bg-success text-success-foreground hover:bg-success">Approved</Badge>,
     rejected: <Badge variant="destructive">Rejected</Badge>,
   };
   return map[status] || <Badge variant="outline">{status}</Badge>;
 }
 
-function Row({ label, value, bold }: any) {
+function Stat({ label, value, bold }: any) {
   return (
-    <div className="flex justify-between border-b pb-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={bold ? "font-bold" : ""}>{value}</span>
+    <div className="rounded-lg border p-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={bold ? "text-base font-bold text-primary" : "text-sm font-semibold"}>{value}</p>
     </div>
   );
 }
