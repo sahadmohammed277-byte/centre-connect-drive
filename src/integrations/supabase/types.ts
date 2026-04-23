@@ -329,9 +329,12 @@ export type Database = {
           checkin_id: string | null
           created_at: string
           estimated_value: number | null
+          hospital_name: string | null
           id: string
           notes: string | null
+          patient_count: number
           patient_name: string | null
+          procedure_type: Database["public"]["Enums"]["procedure_type"] | null
           referral_centre: string | null
           referral_date: string
           referral_received: boolean
@@ -343,9 +346,12 @@ export type Database = {
           checkin_id?: string | null
           created_at?: string
           estimated_value?: number | null
+          hospital_name?: string | null
           id?: string
           notes?: string | null
+          patient_count?: number
           patient_name?: string | null
+          procedure_type?: Database["public"]["Enums"]["procedure_type"] | null
           referral_centre?: string | null
           referral_date?: string
           referral_received?: boolean
@@ -357,9 +363,12 @@ export type Database = {
           checkin_id?: string | null
           created_at?: string
           estimated_value?: number | null
+          hospital_name?: string | null
           id?: string
           notes?: string | null
+          patient_count?: number
           patient_name?: string | null
+          procedure_type?: Database["public"]["Enums"]["procedure_type"] | null
           referral_centre?: string | null
           referral_date?: string
           referral_received?: boolean
@@ -413,9 +422,11 @@ export type Database = {
           contact_number: string | null
           created_at: string
           designation: string | null
+          doctor_name: string | null
           id: string
           notes: string | null
           photo_urls: string[] | null
+          place: string | null
           purpose: string | null
           updated_at: string
           user_id: string
@@ -433,9 +444,11 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           designation?: string | null
+          doctor_name?: string | null
           id?: string
           notes?: string | null
           photo_urls?: string[] | null
+          place?: string | null
           purpose?: string | null
           updated_at?: string
           user_id: string
@@ -453,9 +466,11 @@ export type Database = {
           contact_number?: string | null
           created_at?: string
           designation?: string | null
+          doctor_name?: string | null
           id?: string
           notes?: string | null
           photo_urls?: string[] | null
+          place?: string | null
           purpose?: string | null
           updated_at?: string
           user_id?: string
@@ -508,6 +523,7 @@ export type Database = {
       app_role: "admin" | "staff"
       claim_status: "draft" | "submitted" | "approved" | "rejected"
       km_entry_type: "gps" | "manual"
+      procedure_type: "cag" | "ptca" | "other"
       service_type: "lab" | "opd" | "scan" | "admission"
       visitor_type: "doctor" | "lab" | "ambulance_driver" | "hospital" | "other"
     }
@@ -640,6 +656,7 @@ export const Constants = {
       app_role: ["admin", "staff"],
       claim_status: ["draft", "submitted", "approved", "rejected"],
       km_entry_type: ["gps", "manual"],
+      procedure_type: ["cag", "ptca", "other"],
       service_type: ["lab", "opd", "scan", "admission"],
       visitor_type: ["doctor", "lab", "ambulance_driver", "hospital", "other"],
     },
