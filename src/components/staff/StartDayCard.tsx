@@ -2,13 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useCheckin } from "@/hooks/useCheckin";
-import { getCurrentPosition, distanceMeters } from "@/lib/geo";
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentPosition, distanceKm } from "@/lib/geo";
 
 export default function StartDayCard() {
-  const { profile } = useAuth();
   const { todayCheckin, startDay, endDay } = useCheckin();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,27 +16,6 @@ export default function StartDayCard() {
     try {
       const pos = await getCurrentPosition();
       const { latitude, longitude } = pos.coords;
-
-      // Fetch centre coordinates
-      const { data: centre } = await supabase
-        .from("centres")
-        .select("*")
-        .eq("id", profile!.centre_id!)
-        .single();
-
-      if (!centre) {
-        setError("Centre not found.");
-        setLoading(false);
-        return;
-      }
-
-      const dist = distanceMeters(latitude, longitude, centre.latitude, centre.longitude);
-      if (dist > centre.geo_fence_radius_meters) {
-        setError(`You are ${Math.round(dist)}m from your centre. Please reach within ${centre.geo_fence_radius_meters}m to start your day.`);
-        setLoading(false);
-        return;
-      }
-
       await startDay(latitude, longitude);
     } catch (err: any) {
       setError(err.message || "Failed to get location. Please enable GPS.");
@@ -55,7 +31,6 @@ export default function StartDayCard() {
       const { latitude, longitude } = pos.coords;
       const checkinLat = todayCheckin?.checkin_lat ?? 0;
       const checkinLng = todayCheckin?.checkin_lng ?? 0;
-      const { distanceKm } = await import("@/lib/geo");
       const km = distanceKm(checkinLat, checkinLng, latitude, longitude);
       await endDay(latitude, longitude, km);
     } catch (err: any) {
@@ -75,7 +50,7 @@ export default function StartDayCard() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Tap below when you reach your centre. GPS will verify your location.
+            Tap below to start your work day. GPS will record your starting location.
           </p>
           {error && (
             <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
@@ -85,7 +60,7 @@ export default function StartDayCard() {
           )}
           <Button onClick={handleStartDay} disabled={loading} className="w-full" size="lg">
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
-            {loading ? "Verifying Location..." : "Start Day"}
+            {loading ? "Getting Location..." : "Start Day"}
           </Button>
         </CardContent>
       </Card>
