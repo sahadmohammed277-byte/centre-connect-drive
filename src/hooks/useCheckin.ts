@@ -44,12 +44,20 @@ export function useCheckin() {
   }, [user]);
 
   const startDay = async (lat: number, lng: number) => {
-    if (!user || !profile?.centre_id) return null;
+    if (!user) return null;
+    // centre_id is kept for reporting but no longer restricts check-in.
+    // If staff has no centre assigned, pick the first available centre as a fallback.
+    let centreId = profile?.centre_id;
+    if (!centreId) {
+      const { data: c } = await supabase.from("centres").select("id").limit(1).maybeSingle();
+      centreId = c?.id;
+    }
+    if (!centreId) return null;
     const { data, error } = await supabase
       .from("daily_checkins")
       .insert({
         user_id: user.id,
-        centre_id: profile.centre_id,
+        centre_id: centreId,
         checkin_time: new Date().toISOString(),
         checkin_lat: lat,
         checkin_lng: lng,

@@ -6,6 +6,7 @@ import DailySummaryCard from "@/components/staff/DailySummaryCard";
 import AddVisitDialog from "@/components/staff/AddVisitDialog";
 import AddReferralDialog from "@/components/staff/AddReferralDialog";
 import VisitsList from "@/components/staff/VisitsList";
+import PerformanceCard from "@/components/staff/PerformanceCard";
 import { Button } from "@/components/ui/button";
 import { LogOut, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,7 @@ export default function StaffDashboard() {
 
         {todayCheckin && (
           <>
+            <PerformanceCard checkinId={todayCheckin.id} refreshKey={refreshKey} />
             <DailySummaryCard checkin={todayCheckin} refreshKey={refreshKey} />
 
             {isCheckedIn && (
