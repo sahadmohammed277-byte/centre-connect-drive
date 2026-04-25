@@ -77,6 +77,33 @@ export type Database = {
         }
         Relationships: []
       }
+      centre_procedure_rates: {
+        Row: {
+          cag_rate: number
+          centre_id: string
+          created_at: string
+          id: string
+          ptca_rate: number
+          updated_at: string
+        }
+        Insert: {
+          cag_rate?: number
+          centre_id: string
+          created_at?: string
+          id?: string
+          ptca_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          cag_rate?: number
+          centre_id?: string
+          created_at?: string
+          id?: string
+          ptca_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       centres: {
         Row: {
           created_at: string
