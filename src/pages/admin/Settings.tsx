@@ -4,8 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchSettings, updateSetting, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+type RateRow = { centre_id: string; centre_name: string; cag_rate: number; ptca_rate: number };
 
 export default function SettingsPage() {
   const [s, setS] = useState<AppSettings>(DEFAULT_SETTINGS);
