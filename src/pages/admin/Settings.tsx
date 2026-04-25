@@ -132,6 +132,52 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Procedure Rates by Centre</CardTitle>
+          <p className="text-xs text-muted-foreground">Revenue = (CAG × CAG Rate) + (PTCA × PTCA Rate). Rates are applied per centre.</p>
+        </CardHeader>
+        <CardContent>
+          {rates.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">No centres found. Create centres first.</div>
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Centre Name</TableHead>
+                    <TableHead className="text-right w-[180px]">CAG Rate (₹)</TableHead>
+                    <TableHead className="text-right w-[180px]">PTCA Rate (₹)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rates.map((r) => (
+                    <TableRow key={r.centre_id}>
+                      <TableCell className="font-medium">{r.centre_name}</TableCell>
+                      <TableCell className="text-right">
+                        <Input type="number" min={0} value={r.cag_rate}
+                          onChange={(e) => updateRateRow(r.centre_id, "cag_rate", Number(e.target.value))}
+                          className="text-right" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input type="number" min={0} value={r.ptca_rate}
+                          onChange={(e) => updateRateRow(r.centre_id, "ptca_rate", Number(e.target.value))}
+                          className="text-right" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={saveRates} disabled={savingRates}>
+              {savingRates ? "Saving…" : "Save Procedure Rates"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</Button>
       </div>
