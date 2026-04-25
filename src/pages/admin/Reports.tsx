@@ -9,10 +9,27 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { fetchSettings, calcSummary, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
+import { fetchSettings, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+
+type StaffRow = {
+  user_id: string;
+  centre_id: string | null;
+  working_days: number;
+  total_km: number;
+  doctor_visits: number;
+  referrals: number;
+  cag: number;
+  ptca: number;
+  da_eligible_days: number;
+  total_ta: number;
+  total_da: number;
+  revenue: number;
+  grand_total: number;
+};
 
 export default function ReportsPage() {
   const today = new Date();
@@ -23,88 +40,154 @@ export default function ReportsPage() {
   const [staffFilter, setStaffFilter] = useState("all");
   const [centres, setCentres] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
-  const [report, setReport] = useState<any[]>([]);
+  const [rates, setRates] = useState<Record<string, { cag: number; ptca: number }>>({});
+  const [report, setReport] = useState<StaffRow[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [c, p, s] = await Promise.all([
+      const [c, p, s, r] = await Promise.all([
         supabase.from("centres").select("*").order("name"),
         supabase.from("profiles").select("*"),
         fetchSettings(),
+        (supabase as any).from("centre_procedure_rates").select("*"),
       ]);
       setCentres(c.data || []);
       setProfiles(p.data || []);
       setSettings(s);
+      const rateMap: Record<string, { cag: number; ptca: number }> = {};
+      ((r as any).data || []).forEach((row: any) => {
+        rateMap[row.centre_id] = { cag: Number(row.cag_rate) || 0, ptca: Number(row.ptca_rate) || 0 };
+      });
+      setRates(rateMap);
     })();
   }, []);
 
-  useEffect(() => { void run(); }, [from, to, centreFilter, staffFilter]);
+  useEffect(() => { void run(); }, [from, to, centreFilter, staffFilter, rates, settings]);
 
   async function run() {
     setLoading(true);
     let cq = supabase.from("daily_checkins").select("*").gte("checkin_date", from).lte("checkin_date", to);
-    let vq = supabase.from("visits").select("user_id, visitor_type, visit_date").gte("visit_date", from).lte("visit_date", to);
+    let vq = supabase.from("visits").select("user_id, visitor_type, visit_date, centre_id").gte("visit_date", from).lte("visit_date", to);
+    let rq = supabase.from("referrals").select("user_id, centre_id, procedure_type, patient_count, referral_date").gte("referral_date", from).lte("referral_date", to);
     if (centreFilter !== "all") {
       cq = cq.eq("centre_id", centreFilter);
       vq = vq.eq("centre_id", centreFilter);
+      rq = rq.eq("centre_id", centreFilter);
     }
     if (staffFilter !== "all") {
       cq = cq.eq("user_id", staffFilter);
       vq = vq.eq("user_id", staffFilter);
+      rq = rq.eq("user_id", staffFilter);
     }
-    const [cRes, vRes] = await Promise.all([cq, vq]);
-    const map: Record<string, any> = {};
+    const [cRes, vRes, rRes] = await Promise.all([cq, vq, rq]);
+    const map: Record<string, StaffRow> = {};
+    const ensure = (uid: string, centre_id: string | null) => {
+      if (!map[uid]) {
+        map[uid] = {
+          user_id: uid, centre_id,
+          working_days: 0, total_km: 0, doctor_visits: 0,
+          referrals: 0, cag: 0, ptca: 0,
+          da_eligible_days: 0, total_ta: 0, total_da: 0, revenue: 0, grand_total: 0,
+        };
+      } else if (!map[uid].centre_id && centre_id) {
+        map[uid].centre_id = centre_id;
+      }
+      return map[uid];
+    };
+
     (cRes.data || []).forEach((ci: any) => {
-      const k = ci.user_id;
-      if (!map[k]) map[k] = { user_id: k, working_days: 0, total_km: 0, doctor_visits: 0, da_eligible_days: 0 };
-      map[k].working_days += 1;
-      map[k].total_km += ci.total_km ?? 0;
+      const row = ensure(ci.user_id, ci.centre_id);
+      row.working_days += 1;
+      row.total_km += ci.total_km ?? 0;
     });
-    // Group visits by user+date
+
     const byUserDate: Record<string, number> = {};
     (vRes.data || []).forEach((v: any) => {
+      ensure(v.user_id, v.centre_id);
       if (v.visitor_type !== "doctor") return;
       const k = `${v.user_id}|${v.visit_date}`;
       byUserDate[k] = (byUserDate[k] || 0) + 1;
     });
     Object.entries(byUserDate).forEach(([k, count]) => {
       const [uid] = k.split("|");
-      if (!map[uid]) map[uid] = { user_id: uid, working_days: 0, total_km: 0, doctor_visits: 0, da_eligible_days: 0 };
-      map[uid].doctor_visits += count;
-      if (count >= settings.min_doctor_visits_for_da) map[uid].da_eligible_days += 1;
+      const row = ensure(uid, null);
+      row.doctor_visits += count;
+      if (count >= settings.min_doctor_visits_for_da) row.da_eligible_days += 1;
     });
-    // Compute per-day DA properly: re-iterate checkins
+
+    // referrals & procedure counts (per-centre rates for revenue)
+    (rRes.data || []).forEach((r: any) => {
+      const row = ensure(r.user_id, r.centre_id);
+      const count = Number(r.patient_count) || 1;
+      row.referrals += count;
+      const rate = rates[r.centre_id] || { cag: 0, ptca: 0 };
+      if (r.procedure_type === "cag") {
+        row.cag += count;
+        row.revenue += count * rate.cag;
+      } else if (r.procedure_type === "ptca") {
+        row.ptca += count;
+        row.revenue += count * rate.ptca;
+      }
+    });
+
+    // DA per-day from checkins
     const checkinsByUserDate: Record<string, number> = {};
     (cRes.data || []).forEach((ci: any) => {
       checkinsByUserDate[`${ci.user_id}|${ci.checkin_date}`] = ci.total_km ?? 0;
     });
-    const daTotals: Record<string, number> = {};
     Object.entries(byUserDate).forEach(([k, count]) => {
       if (count >= settings.min_doctor_visits_for_da) {
         const km = checkinsByUserDate[k] || 0;
         const [uid] = k.split("|");
-        daTotals[uid] = (daTotals[uid] || 0) + km * settings.da_rate_per_km;
+        map[uid].total_da += km * settings.da_rate_per_km;
       }
     });
-    const final = Object.values(map).map((r: any) => {
-      const ta = r.total_km * settings.ta_rate_per_km;
-      const da = daTotals[r.user_id] || 0;
-      return { ...r, total_ta: ta, total_da: da, grand_total: ta + da };
+
+    Object.values(map).forEach((r) => {
+      r.total_ta = r.total_km * settings.ta_rate_per_km;
+      r.grand_total = r.total_ta + r.total_da + r.revenue;
     });
-    setReport(final);
+
+    setReport(Object.values(map));
     setLoading(false);
   }
 
   const filtered = report;
 
+  // Centre-wise aggregation
+  const byCentre = (() => {
+    const m: Record<string, StaffRow & { centre_name: string }> = {};
+    filtered.forEach((r) => {
+      const cid = r.centre_id || "unassigned";
+      const cname = centres.find((c) => c.id === cid)?.name || "Unassigned";
+      if (!m[cid]) {
+        m[cid] = { ...r, centre_id: cid, centre_name: cname, user_id: cid };
+      } else {
+        const t = m[cid];
+        t.working_days += r.working_days;
+        t.total_km += r.total_km;
+        t.doctor_visits += r.doctor_visits;
+        t.referrals += r.referrals;
+        t.cag += r.cag;
+        t.ptca += r.ptca;
+        t.da_eligible_days += r.da_eligible_days;
+        t.total_ta += r.total_ta;
+        t.total_da += r.total_da;
+        t.revenue += r.revenue;
+        t.grand_total += r.grand_total;
+      }
+    });
+    return Object.values(m);
+  })();
+
   function downloadCSV() {
-    const header = ["Staff", "Employee ID", "Centre", "Working Days", "Total KM", "Doctor Visits", "DA Eligible Days", "TA (₹)", "DA (₹)", "Grand Total (₹)"];
+    const header = ["Staff", "Employee ID", "Centre", "Working Days", "KM", "Doctor Visits", "Referrals", "CAG", "PTCA", "DA Days", "TA (₹)", "DA (₹)", "Revenue (₹)", "Total (₹)"];
     const lines = [header.join(",")];
     filtered.forEach((r) => {
       const p = profiles.find((x) => x.user_id === r.user_id);
-      const c = centres.find((x) => x.id === p?.centre_id);
+      const c = centres.find((x) => x.id === (p?.centre_id || r.centre_id));
       lines.push([
         `"${p?.full_name || ""}"`,
         p?.employee_id || "",
@@ -112,9 +195,13 @@ export default function ReportsPage() {
         r.working_days,
         r.total_km.toFixed(1),
         r.doctor_visits,
+        r.referrals,
+        r.cag,
+        r.ptca,
         r.da_eligible_days,
         r.total_ta.toFixed(0),
         r.total_da.toFixed(0),
+        r.revenue.toFixed(0),
         r.grand_total.toFixed(0),
       ].join(","));
     });
@@ -133,27 +220,30 @@ export default function ReportsPage() {
     if (!w) return toast.error("Popup blocked");
     const rows = filtered.map((r) => {
       const p = profiles.find((x) => x.user_id === r.user_id);
-      const c = centres.find((x) => x.id === p?.centre_id);
+      const c = centres.find((x) => x.id === (p?.centre_id || r.centre_id));
       return `<tr>
         <td>${p?.full_name || ""}</td>
-        <td>${p?.employee_id || ""}</td>
         <td>${c?.name || ""}</td>
         <td style="text-align:right">${r.working_days}</td>
         <td style="text-align:right">${r.total_km.toFixed(1)}</td>
         <td style="text-align:right">${r.doctor_visits}</td>
+        <td style="text-align:right">${r.referrals}</td>
+        <td style="text-align:right">${r.cag}</td>
+        <td style="text-align:right">${r.ptca}</td>
         <td style="text-align:right">${r.da_eligible_days}</td>
         <td style="text-align:right">₹${r.total_ta.toFixed(0)}</td>
         <td style="text-align:right">₹${r.total_da.toFixed(0)}</td>
+        <td style="text-align:right">₹${r.revenue.toFixed(0)}</td>
         <td style="text-align:right"><strong>₹${r.grand_total.toFixed(0)}</strong></td>
       </tr>`;
     }).join("");
     w.document.write(`
-      <html><head><title>TA & DA Report</title>
-      <style>body{font-family:system-ui;padding:24px}h1{font-size:18px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}th{background:#f3f4f6}</style>
+      <html><head><title>Performance Report</title>
+      <style>body{font-family:system-ui;padding:24px}h1{font-size:18px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}</style>
       </head><body>
-      <h1>KH Referral — TA & DA Report</h1>
+      <h1>KH Referral — Performance Report</h1>
       <p>Period: <strong>${from}</strong> to <strong>${to}</strong></p>
-      <table><thead><tr><th>Staff</th><th>Emp ID</th><th>Centre</th><th>Days</th><th>KM</th><th>Doctors</th><th>DA Days</th><th>TA</th><th>DA</th><th>Total</th></tr></thead>
+      <table><thead><tr><th>Staff</th><th>Centre</th><th>Days</th><th>KM</th><th>Docs</th><th>Refs</th><th>CAG</th><th>PTCA</th><th>DA Days</th><th>TA</th><th>DA</th><th>Revenue</th><th>Total</th></tr></thead>
       <tbody>${rows}</tbody></table>
       <script>window.print()</script>
       </body></html>
@@ -165,10 +255,14 @@ export default function ReportsPage() {
     days: acc.days + r.working_days,
     km: acc.km + r.total_km,
     docs: acc.docs + r.doctor_visits,
+    refs: acc.refs + r.referrals,
+    cag: acc.cag + r.cag,
+    ptca: acc.ptca + r.ptca,
     ta: acc.ta + r.total_ta,
     da: acc.da + r.total_da,
+    revenue: acc.revenue + r.revenue,
     total: acc.total + r.grand_total,
-  }), { days: 0, km: 0, docs: 0, ta: 0, da: 0, total: 0 });
+  }), { days: 0, km: 0, docs: 0, refs: 0, cag: 0, ptca: 0, ta: 0, da: 0, revenue: 0, total: 0 });
 
   return (
     <div className="space-y-6">
@@ -209,57 +303,118 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <SummaryTile label="Working Days" value={totals.days} />
-        <SummaryTile label="Total KM" value={totals.km.toFixed(1)} />
-        <SummaryTile label="Doctor Visits" value={totals.docs} />
-        <SummaryTile label="Total TA" value={`₹${totals.ta.toFixed(0)}`} />
-        <SummaryTile label="Total DA" value={`₹${totals.da.toFixed(0)}`} />
-        <SummaryTile label="Grand Total" value={`₹${totals.total.toFixed(0)}`} highlight />
+        <SummaryTile label="Total Referrals" value={totals.refs} />
+        <SummaryTile label="Total CAG" value={totals.cag} />
+        <SummaryTile label="Total PTCA" value={totals.ptca} />
+        <SummaryTile label="Total Revenue" value={`₹${totals.revenue.toFixed(0)}`} highlight />
       </div>
 
-      <div className="rounded-lg border bg-card overflow-hidden">
-        {loading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">No data for selected filters.</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Staff</TableHead>
-                <TableHead>Centre</TableHead>
-                <TableHead className="text-right">Days</TableHead>
-                <TableHead className="text-right">KM</TableHead>
-                <TableHead className="text-right">Doctors</TableHead>
-                <TableHead className="text-right">DA Days</TableHead>
-                <TableHead className="text-right">TA</TableHead>
-                <TableHead className="text-right">DA</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r) => {
-                const p = profiles.find((x) => x.user_id === r.user_id);
-                const c = centres.find((x) => x.id === p?.centre_id);
-                return (
-                  <TableRow key={r.user_id}>
-                    <TableCell className="font-medium">{p?.full_name || "—"}</TableCell>
-                    <TableCell>{c?.name || "—"}</TableCell>
-                    <TableCell className="text-right">{r.working_days}</TableCell>
-                    <TableCell className="text-right">{r.total_km.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{r.doctor_visits}</TableCell>
-                    <TableCell className="text-right">{r.da_eligible_days}</TableCell>
-                    <TableCell className="text-right">₹{r.total_ta.toFixed(0)}</TableCell>
-                    <TableCell className="text-right">₹{r.total_da.toFixed(0)}</TableCell>
-                    <TableCell className="text-right font-semibold">₹{r.grand_total.toFixed(0)}</TableCell>
+      <Tabs defaultValue="staff" className="w-full">
+        <TabsList>
+          <TabsTrigger value="staff">Staff-wise</TabsTrigger>
+          <TabsTrigger value="centre">Centre-wise</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="staff">
+          <div className="rounded-lg border bg-card overflow-x-auto">
+            {loading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
+            ) : filtered.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">No data for selected filters.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Staff</TableHead>
+                    <TableHead>Centre</TableHead>
+                    <TableHead className="text-right">Working Days</TableHead>
+                    <TableHead className="text-right">KM</TableHead>
+                    <TableHead className="text-right">Doctor Visits</TableHead>
+                    <TableHead className="text-right">Referrals</TableHead>
+                    <TableHead className="text-right">CAG</TableHead>
+                    <TableHead className="text-right">PTCA</TableHead>
+                    <TableHead className="text-right">DA Days</TableHead>
+                    <TableHead className="text-right">TA</TableHead>
+                    <TableHead className="text-right">DA</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r) => {
+                    const p = profiles.find((x) => x.user_id === r.user_id);
+                    const c = centres.find((x) => x.id === (p?.centre_id || r.centre_id));
+                    return (
+                      <TableRow key={r.user_id}>
+                        <TableCell className="font-medium">{p?.full_name || "—"}</TableCell>
+                        <TableCell>{c?.name || "—"}</TableCell>
+                        <TableCell className="text-right">{r.working_days}</TableCell>
+                        <TableCell className="text-right">{r.total_km.toFixed(1)}</TableCell>
+                        <TableCell className="text-right">{r.doctor_visits}</TableCell>
+                        <TableCell className="text-right">{r.referrals}</TableCell>
+                        <TableCell className="text-right">{r.cag}</TableCell>
+                        <TableCell className="text-right">{r.ptca}</TableCell>
+                        <TableCell className="text-right">{r.da_eligible_days}</TableCell>
+                        <TableCell className="text-right">₹{r.total_ta.toFixed(0)}</TableCell>
+                        <TableCell className="text-right">₹{r.total_da.toFixed(0)}</TableCell>
+                        <TableCell className="text-right">₹{r.revenue.toFixed(0)}</TableCell>
+                        <TableCell className="text-right font-semibold">₹{r.grand_total.toFixed(0)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="centre">
+          <div className="rounded-lg border bg-card overflow-x-auto">
+            {loading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
+            ) : byCentre.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">No data for selected filters.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Centre</TableHead>
+                    <TableHead className="text-right">Working Days</TableHead>
+                    <TableHead className="text-right">KM</TableHead>
+                    <TableHead className="text-right">Doctor Visits</TableHead>
+                    <TableHead className="text-right">Referrals</TableHead>
+                    <TableHead className="text-right">CAG</TableHead>
+                    <TableHead className="text-right">PTCA</TableHead>
+                    <TableHead className="text-right">TA</TableHead>
+                    <TableHead className="text-right">DA</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {byCentre.map((r) => (
+                    <TableRow key={r.centre_id || "unassigned"}>
+                      <TableCell className="font-medium">{r.centre_name}</TableCell>
+                      <TableCell className="text-right">{r.working_days}</TableCell>
+                      <TableCell className="text-right">{r.total_km.toFixed(1)}</TableCell>
+                      <TableCell className="text-right">{r.doctor_visits}</TableCell>
+                      <TableCell className="text-right">{r.referrals}</TableCell>
+                      <TableCell className="text-right">{r.cag}</TableCell>
+                      <TableCell className="text-right">{r.ptca}</TableCell>
+                      <TableCell className="text-right">₹{r.total_ta.toFixed(0)}</TableCell>
+                      <TableCell className="text-right">₹{r.total_da.toFixed(0)}</TableCell>
+                      <TableCell className="text-right">₹{r.revenue.toFixed(0)}</TableCell>
+                      <TableCell className="text-right font-semibold">₹{r.grand_total.toFixed(0)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
