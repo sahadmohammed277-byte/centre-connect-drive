@@ -16,9 +16,51 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [rates, setRates] = useState<RateRow[]>([]);
+  const [savingRates, setSavingRates] = useState(false);
+
   useEffect(() => {
     fetchSettings().then((v) => { setS(v); setLoading(false); });
+    void loadRates();
   }, []);
+
+  async function loadRates() {
+    const { data: centres } = await supabase.from("centres").select("id, name").order("name");
+    const { data: existing } = await (supabase as any).from("centre_procedure_rates").select("*");
+    const map = new Map<string, any>();
+    (existing || []).forEach((r: any) => map.set(r.centre_id, r));
+    const rows: RateRow[] = (centres || []).map((c: any) => ({
+      centre_id: c.id,
+      centre_name: c.name,
+      cag_rate: Number(map.get(c.id)?.cag_rate ?? 0),
+      ptca_rate: Number(map.get(c.id)?.ptca_rate ?? 0),
+    }));
+    setRates(rows);
+  }
+
+  function updateRateRow(centre_id: string, field: "cag_rate" | "ptca_rate", value: number) {
+    setRates((prev) => prev.map((r) => (r.centre_id === centre_id ? { ...r, [field]: value } : r)));
+  }
+
+  async function saveRates() {
+    setSavingRates(true);
+    try {
+      const payload = rates.map((r) => ({
+        centre_id: r.centre_id,
+        cag_rate: Number(r.cag_rate) || 0,
+        ptca_rate: Number(r.ptca_rate) || 0,
+      }));
+      const { error } = await (supabase as any)
+        .from("centre_procedure_rates")
+        .upsert(payload, { onConflict: "centre_id" });
+      if (error) throw error;
+      toast.success("Procedure rates saved");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save rates");
+    } finally {
+      setSavingRates(false);
+    }
+  }
 
   async function save() {
     setSaving(true);
