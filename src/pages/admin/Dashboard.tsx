@@ -152,272 +152,331 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Users} label="Checked In" value={`${checkedIn} / ${rows.length}`} tone="success" />
-        <StatCard icon={UserX} label="Not Checked In" value={notCheckedIn} tone="destructive" />
-        <StatCard icon={Activity} label="Visits Today" value={totalVisits} tone="primary" />
-        <StatCard icon={MapPin} label="KM Today" value={totalKm.toFixed(1)} tone="accent" />
-        <StatCard icon={Stethoscope} label="CAG Today" value={totalCag} tone="warning" />
-        <StatCard icon={TrendingUp} label="PTCA Today" value={totalPtca} tone="destructive" />
-        <StatCard icon={IndianRupee} label="Revenue Today" value={`₹${totalRevenue.toFixed(0)}`} tone="success" />
-        <StatCard icon={IndianRupee} label="TA + DA Today" value={`₹${totalAllowance.toFixed(0)}`} tone="primary" />
+    <div className="space-y-8">
+      {/* Page heading */}
+      <div className="flex items-end justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Today's Overview</h2>
+          <p className="text-sm text-muted-foreground">
+            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+          </p>
+        </div>
+        <Badge variant="outline" className="gap-1.5 font-normal">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" /> Live
+        </Badge>
       </div>
+
+      {/* Activity section */}
+      <Section title="Activity" subtitle="Real-time field & travel metrics">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard icon={Users} label="Checked In" value={`${checkedIn} / ${rows.length}`} tone="success" />
+          <StatCard icon={UserX} label="Not Checked In" value={notCheckedIn} tone="destructive" />
+          <StatCard icon={Activity} label="Visits Today" value={totalVisits} tone="primary" />
+          <StatCard icon={MapPin} label="KM Today" value={totalKm.toFixed(1)} tone="neutral" />
+        </div>
+      </Section>
+
+      {/* Business section */}
+      <Section title="Business" subtitle="Procedures & revenue generated today">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard icon={Stethoscope} label="CAG Today" value={totalCag} tone="primary" />
+          <StatCard icon={TrendingUp} label="PTCA Today" value={totalPtca} tone="primary" />
+          <StatCard icon={IndianRupee} label="Revenue Today" value={`₹${totalRevenue.toFixed(0)}`} tone="success" />
+          <StatCard icon={IndianRupee} label="TA + DA Today" value={`₹${totalAllowance.toFixed(0)}`} tone="neutral" />
+        </div>
+      </Section>
 
       {/* Top performers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" /> Top Performing Staff (Today)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topStaff.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No activity yet today.</p>
-            ) : (
-              topStaff.map((r, i) => (
-                <div key={r.profile.id} className="flex items-center justify-between rounded-lg border p-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-                      {i + 1}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{r.profile.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{r.centre?.name || "—"}</p>
-                    </div>
-                  </div>
-                  <div className="text-right text-xs">
-                    <p className="font-semibold">{r.visitCount} visits</p>
-                    <p className="text-muted-foreground">₹{r.revenue.toFixed(0)}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Stethoscope className="h-4 w-4" /> Top Doctors (Today)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topDoctors.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No doctor visits yet today.</p>
-            ) : (
-              topDoctors.map((d, i) => (
-                <div key={d.name} className="flex items-center justify-between rounded-lg border p-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-bold">
-                      {i + 1}
-                    </div>
-                    <p className="text-sm font-medium">{d.name}</p>
-                  </div>
-                  <Badge variant="secondary">{d.count} visits</Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="live" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="live">Live Status</TabsTrigger>
-          <TabsTrigger value="daily">Daily Summary</TabsTrigger>
-          <TabsTrigger value="alerts">
-            Alerts {allAlerts > 0 && <Badge variant="destructive" className="ml-2">{allAlerts}</Badge>}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="live">
-          <DataTableShell
-            searchValue={search}
-            onSearchChange={setSearch}
-            searchPlaceholder="Search staff…"
-            isEmpty={filtered.length === 0}
-            filters={
-              <Select value={centreFilter} onValueChange={setCentreFilter}>
-                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Centres</SelectItem>
-                  {centres.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Staff</TableHead>
-                  <TableHead>Centre</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Check-in</TableHead>
-                  <TableHead className="text-right">Visits</TableHead>
-                  <TableHead className="text-right">Doctors</TableHead>
-                  <TableHead className="text-right">CAG</TableHead>
-                  <TableHead className="text-right">PTCA</TableHead>
-                  <TableHead className="text-right">Revenue</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.profile.id}>
-                    <TableCell className="font-medium">{r.profile.full_name}</TableCell>
-                    <TableCell>{r.centre?.name || "—"}</TableCell>
-                    <TableCell>
-                      {r.checkin ? (
-                        <Badge className="bg-success text-success-foreground hover:bg-success">Checked-in</Badge>
-                      ) : (
-                        <Badge variant="destructive">Not checked-in</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {r.checkin?.checkin_time
-                        ? new Date(r.checkin.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">{r.visitCount}</TableCell>
-                    <TableCell className="text-right">{r.doctorCount}</TableCell>
-                    <TableCell className="text-right">{r.cagCount}</TableCell>
-                    <TableCell className="text-right">{r.ptcaCount}</TableCell>
-                    <TableCell className="text-right">₹{r.revenue.toFixed(0)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </DataTableShell>
-        </TabsContent>
-
-        <TabsContent value="daily">
-          <DataTableShell
-            searchValue={search}
-            onSearchChange={setSearch}
-            isEmpty={filtered.length === 0}
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Staff</TableHead>
-                  <TableHead>Centre</TableHead>
-                  <TableHead className="text-right">KM</TableHead>
-                  <TableHead className="text-right">Doctors</TableHead>
-                  <TableHead className="text-right">Referrals</TableHead>
-                  <TableHead className="text-right">Revenue</TableHead>
-                  <TableHead className="text-right">TA</TableHead>
-                  <TableHead className="text-right">DA</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => {
-                  const sum = calcSummary(r.checkin?.total_km ?? 0, r.doctorCount, settings);
-                  return (
-                    <TableRow key={r.profile.id}>
-                      <TableCell className="font-medium">{r.profile.full_name}</TableCell>
-                      <TableCell>{r.centre?.name || "—"}</TableCell>
-                      <TableCell className="text-right">{sum.totalKm.toFixed(1)}</TableCell>
-                      <TableCell className="text-right">{sum.doctorCount}</TableCell>
-                      <TableCell className="text-right">{r.referralCount}</TableCell>
-                      <TableCell className="text-right">₹{r.revenue.toFixed(0)}</TableCell>
-                      <TableCell className="text-right">₹{sum.ta.toFixed(0)}</TableCell>
-                      <TableCell className="text-right">₹{sum.da.toFixed(0)}</TableCell>
-                      <TableCell className="text-right font-semibold">₹{sum.total.toFixed(0)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </DataTableShell>
-        </TabsContent>
-
-        <TabsContent value="alerts">
-          <Card>
-            <CardContent className="p-6 space-y-3">
-              {allAlerts === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">All clear — no alerts.</p>
+      <Section title="Top Performers">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="shadow-card border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground/80">
+                <TrendingUp className="h-4 w-4 text-primary" /> Top Performing Staff
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
+              {topStaff.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">No activity yet today.</p>
               ) : (
-                <>
-                  {middayNoVisitAlerts.map((r) => (
-                    <AlertRow
-                      key={`mid-${r.profile.id}`}
-                      tone="destructive"
-                      icon={<AlertTriangle className="h-5 w-5 text-destructive shrink-0" />}
-                      title={r.profile.full_name}
-                      message="No visits recorded yet — past midday."
-                      centre={r.centre?.name}
-                    />
-                  ))}
-                  {lowActivityAlerts.map((r) => (
-                    <AlertRow
-                      key={`low-${r.profile.id}`}
-                      tone="warning"
-                      icon={<Activity className="h-5 w-5 text-warning shrink-0" />}
-                      title={r.profile.full_name}
-                      message={`Low activity — only ${r.visitCount} visit(s) so far.`}
-                      centre={r.centre?.name}
-                    />
-                  ))}
-                  {daAlerts.map((r) => (
-                    <AlertRow
-                      key={`da-${r.profile.id}`}
-                      tone="warning"
-                      icon={<HeartHandshake className="h-5 w-5 text-warning shrink-0" />}
-                      title={r.profile.full_name}
-                      message={`Only ${r.doctorCount} doctor visit(s) — needs ${settings.min_doctor_visits_for_da} for DA eligibility.`}
-                      centre={r.centre?.name}
-                    />
-                  ))}
-                </>
+                topStaff.map((r, i) => (
+                  <div key={r.profile.id} className="flex items-center justify-between rounded-md px-2 py-2 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{r.profile.full_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{r.centre?.name || "—"}</p>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs">
+                      <p className="font-semibold">{r.visitCount} visits</p>
+                      <p className="text-muted-foreground">₹{r.revenue.toFixed(0)}</p>
+                    </div>
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          <Card className="shadow-card border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground/80">
+                <Stethoscope className="h-4 w-4 text-primary" /> Top Doctors
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
+              {topDoctors.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">No doctor visits yet today.</p>
+              ) : (
+                topDoctors.map((d, i) => (
+                  <div key={d.name} className="flex items-center justify-between rounded-md px-2 py-2 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-accent text-xs font-semibold">
+                        {i + 1}
+                      </div>
+                      <p className="text-sm font-medium">{d.name}</p>
+                    </div>
+                    <PillBadge tone="neutral">{d.count} visits</PillBadge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </Section>
+
+      {/* Tables */}
+      <Section title="Staff Activity">
+        <Tabs defaultValue="live" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="live">Live Status</TabsTrigger>
+            <TabsTrigger value="daily">Daily Summary</TabsTrigger>
+            <TabsTrigger value="alerts">
+              Alerts {allAlerts > 0 && <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">{allAlerts}</Badge>}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="live">
+            <DataTableShell
+              searchValue={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search staff…"
+              isEmpty={filtered.length === 0}
+              filters={
+                <Select value={centreFilter} onValueChange={setCentreFilter}>
+                  <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Centres</SelectItem>
+                    {centres.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              }
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground">Staff</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground">Centre</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground">Check-in</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Visits</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Doctors</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">CAG</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">PTCA</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Revenue</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r, idx) => (
+                    <TableRow
+                      key={r.profile.id}
+                      className={`h-11 transition-colors ${idx % 2 === 1 ? "bg-muted/30" : ""} hover:bg-primary/5`}
+                    >
+                      <TableCell className="py-2 font-medium">{r.profile.full_name}</TableCell>
+                      <TableCell className="py-2 text-muted-foreground">{r.centre?.name || "—"}</TableCell>
+                      <TableCell className="py-2">
+                        {r.checkin ? (
+                          <PillBadge tone="success">Checked-in</PillBadge>
+                        ) : (
+                          <PillBadge tone="destructive">Not checked-in</PillBadge>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-2 text-xs text-muted-foreground tabular-nums">
+                        {r.checkin?.checkin_time
+                          ? new Date(r.checkin.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="py-2 text-right tabular-nums">{r.visitCount}</TableCell>
+                      <TableCell className="py-2 text-right tabular-nums">{r.doctorCount}</TableCell>
+                      <TableCell className="py-2 text-right tabular-nums">{r.cagCount}</TableCell>
+                      <TableCell className="py-2 text-right tabular-nums">{r.ptcaCount}</TableCell>
+                      <TableCell className="py-2 text-right tabular-nums font-medium">₹{r.revenue.toFixed(0)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </DataTableShell>
+          </TabsContent>
+
+          <TabsContent value="daily">
+            <DataTableShell
+              searchValue={search}
+              onSearchChange={setSearch}
+              isEmpty={filtered.length === 0}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground">Staff</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground">Centre</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">KM</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Doctors</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Referrals</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Revenue</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">TA</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">DA</TableHead>
+                    <TableHead className="h-10 text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r, idx) => {
+                    const sum = calcSummary(r.checkin?.total_km ?? 0, r.doctorCount, settings);
+                    return (
+                      <TableRow
+                        key={r.profile.id}
+                        className={`h-11 transition-colors ${idx % 2 === 1 ? "bg-muted/30" : ""} hover:bg-primary/5`}
+                      >
+                        <TableCell className="py-2 font-medium">{r.profile.full_name}</TableCell>
+                        <TableCell className="py-2 text-muted-foreground">{r.centre?.name || "—"}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums">{sum.totalKm.toFixed(1)}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums">{sum.doctorCount}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums">{r.referralCount}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums">₹{r.revenue.toFixed(0)}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums">₹{sum.ta.toFixed(0)}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums">₹{sum.da.toFixed(0)}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums font-semibold">₹{sum.total.toFixed(0)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </DataTableShell>
+          </TabsContent>
+
+          <TabsContent value="alerts">
+            <Card className="shadow-card border-border/60">
+              <CardContent className="p-4 space-y-2">
+                {allAlerts === 0 ? (
+                  <p className="text-sm text-muted-foreground py-10 text-center">All clear — no alerts.</p>
+                ) : (
+                  <>
+                    {middayNoVisitAlerts.map((r) => (
+                      <AlertRow
+                        key={`mid-${r.profile.id}`}
+                        tone="destructive"
+                        icon={<AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
+                        title={r.profile.full_name}
+                        message="No visits recorded yet — past midday."
+                        centre={r.centre?.name}
+                      />
+                    ))}
+                    {lowActivityAlerts.map((r) => (
+                      <AlertRow
+                        key={`low-${r.profile.id}`}
+                        tone="warning"
+                        icon={<Activity className="h-4 w-4 text-warning shrink-0" />}
+                        title={r.profile.full_name}
+                        message={`Low activity — only ${r.visitCount} visit(s) so far.`}
+                        centre={r.centre?.name}
+                      />
+                    ))}
+                    {daAlerts.map((r) => (
+                      <AlertRow
+                        key={`da-${r.profile.id}`}
+                        tone="warning"
+                        icon={<HeartHandshake className="h-4 w-4 text-warning shrink-0" />}
+                        title={r.profile.full_name}
+                        message={`Only ${r.doctorCount} doctor visit(s) — needs ${settings.min_doctor_visits_for_da} for DA eligibility.`}
+                        centre={r.centre?.name}
+                      />
+                    ))}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </Section>
     </div>
+  );
+}
+
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+        {subtitle && <p className="text-xs text-muted-foreground/80 mt-0.5">{subtitle}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function PillBadge({ tone, children }: { tone: "success" | "destructive" | "warning" | "neutral"; children: React.ReactNode }) {
+  const map = {
+    success: "bg-success/10 text-success ring-success/20",
+    destructive: "bg-destructive/10 text-destructive ring-destructive/20",
+    warning: "bg-warning/10 text-warning ring-warning/20",
+    neutral: "bg-muted text-foreground/70 ring-border",
+  } as const;
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${map[tone]}`}>
+      {children}
+    </span>
   );
 }
 
 function AlertRow({ tone, icon, title, message, centre }: { tone: "destructive" | "warning"; icon: React.ReactNode; title: string; message: string; centre?: string }) {
-  const cls = tone === "destructive" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5";
+  const cls = tone === "destructive" ? "border-destructive/20 bg-destructive/5" : "border-warning/20 bg-warning/5";
   return (
     <div className={`flex items-center gap-3 rounded-lg border ${cls} p-3`}>
       {icon}
-      <div className="flex-1">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{message}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{title}</p>
+        <p className="text-xs text-muted-foreground truncate">{message}</p>
       </div>
-      {centre && <Badge variant="outline">{centre}</Badge>}
+      {centre && <PillBadge tone="neutral">{centre}</PillBadge>}
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, tone }: any) {
+function StatCard({ icon: Icon, label, value, tone }: { icon: any; label: string; value: any; tone: "primary" | "success" | "destructive" | "warning" | "neutral" }) {
   const toneMap: Record<string, string> = {
     primary: "bg-primary/10 text-primary",
     success: "bg-success/10 text-success",
     destructive: "bg-destructive/10 text-destructive",
-    accent: "bg-accent/10 text-accent",
     warning: "bg-warning/10 text-warning",
+    neutral: "bg-muted text-foreground/70",
   };
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${toneMap[tone]}`}>
-            <Icon className="h-5 w-5" />
-          </div>
+    <Card className="shadow-card border-border/60 hover:shadow-card-hover transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="text-xl font-bold truncate">{value}</p>
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="text-2xl font-bold tracking-tight mt-1 truncate">{value}</p>
+          </div>
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${toneMap[tone]}`}>
+            <Icon className="h-4 w-4" strokeWidth={2} />
           </div>
         </div>
       </CardContent>
     </Card>
   );
 }
+
