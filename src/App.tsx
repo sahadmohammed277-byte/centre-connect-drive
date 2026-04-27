@@ -16,6 +16,7 @@ import AdminsPage from "./pages/admin/Admins";
 import DailyActivityPage from "./pages/admin/DailyActivity";
 import ReportsPage from "./pages/admin/Reports";
 import ApprovalsPage from "./pages/admin/Approvals";
+import LeaveApprovalsPage from "./pages/admin/LeaveApprovals";
 import SettingsPage from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="activity" element={<DailyActivityPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
+              <Route path="leaves" element={<LeaveApprovalsPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
