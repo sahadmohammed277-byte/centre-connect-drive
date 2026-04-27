@@ -10,32 +10,37 @@ export default function StartDayCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Try to grab GPS but don't block start/end if denied — staff can start from anywhere.
+  const tryGetPosition = async (): Promise<{ lat: number | null; lng: number | null }> => {
+    try {
+      const pos = await getCurrentPosition();
+      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch {
+      return { lat: null, lng: null };
+    }
+  };
+
   const handleStartDay = async () => {
     setLoading(true);
     setError("");
-    try {
-      const pos = await getCurrentPosition();
-      const { latitude, longitude } = pos.coords;
-      await startDay(latitude, longitude);
-    } catch (err: any) {
-      setError(err.message || "Failed to get location. Please enable GPS.");
-    }
+    const { lat, lng } = await tryGetPosition();
+    const res = await startDay(lat, lng);
+    if (res?.error) setError(res.error.message || "Failed to start day");
     setLoading(false);
   };
 
   const handleEndDay = async () => {
     setLoading(true);
     setError("");
-    try {
-      const pos = await getCurrentPosition();
-      const { latitude, longitude } = pos.coords;
-      const checkinLat = todayCheckin?.checkin_lat ?? 0;
-      const checkinLng = todayCheckin?.checkin_lng ?? 0;
-      const km = distanceKm(checkinLat, checkinLng, latitude, longitude);
-      await endDay(latitude, longitude, km);
-    } catch (err: any) {
-      setError(err.message || "Failed to get location.");
-    }
+    const { lat, lng } = await tryGetPosition();
+    const checkinLat = todayCheckin?.checkin_lat;
+    const checkinLng = todayCheckin?.checkin_lng;
+    const km =
+      lat != null && lng != null && checkinLat != null && checkinLng != null
+        ? distanceKm(checkinLat, checkinLng, lat, lng)
+        : 0;
+    const res = await endDay(lat, lng, km);
+    if (res?.error) setError(res.error.message || "Failed to end day");
     setLoading(false);
   };
 
@@ -50,7 +55,7 @@ export default function StartDayCard() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Tap below to start your work day. GPS will record your starting location.
+            You can start your day from anywhere. We'll capture your location automatically if available.
           </p>
           {error && (
             <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
@@ -60,7 +65,7 @@ export default function StartDayCard() {
           )}
           <Button onClick={handleStartDay} disabled={loading} className="w-full" size="lg">
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
-            {loading ? "Getting Location..." : "Start Day"}
+            {loading ? "Starting..." : "Start Day"}
           </Button>
         </CardContent>
       </Card>
