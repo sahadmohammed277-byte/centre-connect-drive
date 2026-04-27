@@ -2,13 +2,18 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckin } from "@/hooks/useCheckin";
 import StartDayCard from "@/components/staff/StartDayCard";
-import DailySummaryCard from "@/components/staff/DailySummaryCard";
+import IndividualSummary from "@/components/staff/IndividualSummary";
 import AddVisitDialog from "@/components/staff/AddVisitDialog";
-import AddReferralDialog from "@/components/staff/AddReferralDialog";
+import AddProcedureDialog from "@/components/staff/AddProcedureDialog";
+import AddLeaveDialog from "@/components/staff/AddLeaveDialog";
 import VisitsList from "@/components/staff/VisitsList";
-import PerformanceCard from "@/components/staff/PerformanceCard";
+import ProceduresList from "@/components/staff/ProceduresList";
+import LeaveList from "@/components/staff/LeaveList";
+import ActivityFeed from "@/components/staff/ActivityFeed";
+import WeeklySummary from "@/components/staff/WeeklySummary";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, Bell } from "lucide-react";
+import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartPulse, CalendarDays, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function StaffDashboard() {
@@ -24,9 +29,7 @@ export default function StaffDashboard() {
         .select("name")
         .eq("id", profile.centre_id)
         .single()
-        .then(({ data }) => {
-          if (data) setCentreName(data.name);
-        });
+        .then(({ data }) => { if (data) setCentreName(data.name); });
     }
   }, [profile?.centre_id]);
 
@@ -46,44 +49,91 @@ export default function StaffDashboard() {
     <div className="min-h-screen bg-background safe-top safe-bottom">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold">{profile?.full_name || "Staff"}</h1>
-            <p className="text-xs text-muted-foreground">{centreName} · {profile?.employee_id}</p>
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div className="min-w-0">
+            <h1 className="text-base font-bold truncate">{profile?.full_name || "Staff"}</h1>
+            <p className="text-xs text-muted-foreground truncate">
+              {centreName || "—"} · {profile?.employee_id}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="h-5 w-5" />
-            </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon"><Bell className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-5 w-5" /></Button>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <main className="p-4 space-y-4 max-w-lg mx-auto pb-20">
-        <StartDayCard />
+      <main className="max-w-2xl mx-auto px-4 pt-4 pb-24">
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="dashboard" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <LayoutDashboard className="h-4 w-4" /> Home
+            </TabsTrigger>
+            <TabsTrigger value="visits" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <Stethoscope className="h-4 w-4" /> Visits
+            </TabsTrigger>
+            <TabsTrigger value="procedures" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <HeartPulse className="h-4 w-4" /> Cases
+            </TabsTrigger>
+            <TabsTrigger value="leave" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <CalendarDays className="h-4 w-4" /> Leave
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <Activity className="h-4 w-4" /> Feed
+            </TabsTrigger>
+          </TabsList>
 
-        {todayCheckin && (
-          <>
-            <PerformanceCard checkinId={todayCheckin.id} refreshKey={refreshKey} />
-            <DailySummaryCard checkin={todayCheckin} refreshKey={refreshKey} />
+          {/* Dashboard */}
+          <TabsContent value="dashboard" className="space-y-4 mt-0">
+            <StartDayCard />
+            <IndividualSummary refreshKey={refreshKey} />
+            <WeeklySummary refreshKey={refreshKey} />
+          </TabsContent>
 
-            {isCheckedIn && (
-              <div className="flex gap-2">
+          {/* Visits */}
+          <TabsContent value="visits" className="space-y-4 mt-0">
+            {isCheckedIn ? (
+              <div className="flex justify-end">
                 <AddVisitDialog checkinId={todayCheckin.id} onAdded={refresh} />
-                <AddReferralDialog checkinId={todayCheckin.id} onAdded={refresh} />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3 text-center">
+                Start your day to add visits.
+              </p>
+            )}
+            {todayCheckin && (
+              <div>
+                <h2 className="text-sm font-semibold mb-2">Today's Visits</h2>
+                <VisitsList checkinId={todayCheckin.id} refreshKey={refreshKey} />
               </div>
             )}
+          </TabsContent>
 
-            <div>
-              <h2 className="text-sm font-semibold mb-2">Today's Visits</h2>
-              <VisitsList checkinId={todayCheckin.id} refreshKey={refreshKey} />
+          {/* Procedures */}
+          <TabsContent value="procedures" className="space-y-4 mt-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">My Procedures</h2>
+              <AddProcedureDialog checkinId={todayCheckin?.id} onAdded={refresh} />
             </div>
-          </>
-        )}
+            <ProceduresList refreshKey={refreshKey} onChanged={refresh} />
+          </TabsContent>
+
+          {/* Leave */}
+          <TabsContent value="leave" className="space-y-4 mt-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Leave Requests</h2>
+              <AddLeaveDialog onAdded={refresh} />
+            </div>
+            <LeaveList refreshKey={refreshKey} onChanged={refresh} />
+          </TabsContent>
+
+          {/* Activity */}
+          <TabsContent value="activity" className="space-y-4 mt-0">
+            <h2 className="text-sm font-semibold">Today's Activity</h2>
+            <ActivityFeed refreshKey={refreshKey} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
