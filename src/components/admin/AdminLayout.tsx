@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { NavLink } from "@/components/NavLink";
 import { Outlet, useLocation } from "react-router-dom";
+import khLogo from "@/assets/kh-logo.png";
 import {
   LayoutDashboard,
   Building2,
@@ -43,13 +44,13 @@ export default function AdminLayout() {
 
   const sidebar = (
     <aside className="flex h-full w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold">
-          KH
+      <div className="flex h-16 items-center gap-3 px-5 border-b border-sidebar-border">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shrink-0">
+          <img src={khLogo} alt="Karunya Hrudayalaya" className="h-full w-full object-contain" />
         </div>
-        <div>
-          <p className="text-sm font-bold leading-tight">KH Referral</p>
-          <p className="text-xs text-sidebar-foreground/60">Admin Panel</p>
+        <div className="min-w-0">
+          <p className="text-sm font-bold leading-tight truncate">Karunya Hrudayalaya</p>
+          <p className="text-xs text-sidebar-foreground/60">Cardiac Centre · Admin</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 p-3 overflow-y-auto">

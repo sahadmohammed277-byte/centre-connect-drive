@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Briefcase } from "lucide-react";
+import { MapPin } from "lucide-react";
+import khLogo from "@/assets/kh-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -31,12 +32,12 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-            <Briefcase className="h-7 w-7 text-primary-foreground" />
+        <div className="text-center space-y-3">
+          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-card p-3">
+            <img src={khLogo} alt="Karunya Hrudayalaya Cardiac Centre" className="h-full w-full object-contain" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">KH Referral</h1>
-          <p className="text-sm text-muted-foreground">Marketing Management System</p>
+          <h1 className="text-2xl font-bold tracking-tight text-primary">Karunya Hrudayalaya</h1>
+          <p className="text-sm text-muted-foreground">Cardiac Centre · Referral Marketing</p>
         </div>
 
         <Card>
@@ -80,7 +81,7 @@ export default function Login() {
 
         <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
           <MapPin className="h-3 w-3" />
-          <span>Kerala Hospitals Network</span>
+          <span>Karunya Hrudayalaya Cardiac Centre</span>
         </div>
       </div>
     </div>
