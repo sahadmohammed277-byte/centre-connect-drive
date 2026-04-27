@@ -10,6 +10,7 @@ import {
   CalendarDays,
   FileBarChart,
   CheckCircle2,
+  CalendarCheck,
   Settings as SettingsIcon,
   LogOut,
   Menu,
@@ -34,6 +35,7 @@ const items = [
   { to: "/admin/activity", label: "Daily Activity", icon: CalendarDays },
   { to: "/admin/reports", label: "Reports", icon: FileBarChart },
   { to: "/admin/approvals", label: "Approvals", icon: CheckCircle2 },
+  { to: "/admin/leaves", label: "Leave Requests", icon: CalendarCheck },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 

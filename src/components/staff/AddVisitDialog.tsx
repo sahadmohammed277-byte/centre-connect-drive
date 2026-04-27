@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,15 +18,17 @@ type VisitorType = Database["public"]["Enums"]["visitor_type"];
 interface Props {
   checkinId: string;
   onAdded: () => void;
+  trigger?: React.ReactNode;
 }
 
-export default function AddVisitDialog({ checkinId, onAdded }: Props) {
+export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
   const { user, profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState("");
+  const [referral, setReferral] = useState(false);
   const [form, setForm] = useState({
     visitor_type: "doctor" as VisitorType,
     visitor_name: "",
@@ -51,21 +54,25 @@ export default function AddVisitDialog({ checkinId, onAdded }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !profile?.centre_id) return;
-    if (!coords) {
-      setGpsError("GPS location is required for every visit. Tap 'Capture Location'.");
+    if (!user) return;
+    let centreId = profile?.centre_id;
+    if (!centreId) {
+      const { data: c } = await supabase.from("centres").select("id").limit(1).maybeSingle();
+      centreId = c?.id;
+    }
+    if (!centreId) {
+      toast.error("No centre available");
       return;
     }
     setLoading(true);
 
-    const visitorName = form.visitor_type === "doctor" && form.doctor_name
-      ? form.doctor_name
-      : form.visitor_name;
+    const visitorName =
+      form.visitor_type === "doctor" && form.doctor_name ? form.doctor_name : form.visitor_name;
 
     const { error } = await supabase.from("visits").insert({
       user_id: user.id,
       checkin_id: checkinId,
-      centre_id: profile.centre_id,
+      centre_id: centreId,
       visitor_type: form.visitor_type,
       visitor_name: visitorName,
       doctor_name: form.doctor_name || null,
@@ -74,20 +81,40 @@ export default function AddVisitDialog({ checkinId, onAdded }: Props) {
       contact_number: form.contact_number || null,
       purpose: form.purpose || null,
       notes: form.notes || null,
-      visit_lat: coords.lat,
-      visit_lng: coords.lng,
+      visit_lat: coords?.lat ?? null,
+      visit_lng: coords?.lng ?? null,
       checkin_time: new Date().toISOString(),
     });
 
     if (error) {
       toast.error("Failed to add visit");
-    } else {
-      toast.success("Visit started");
-      setForm({ visitor_type: "doctor", visitor_name: "", doctor_name: "", place: "", designation: "", contact_number: "", purpose: "", notes: "" });
-      setCoords(null);
-      setOpen(false);
-      onAdded();
+      setLoading(false);
+      return;
     }
+
+    // Optional referral marker — record a lightweight referral row.
+    if (referral) {
+      await supabase.from("referrals").insert({
+        user_id: user.id,
+        checkin_id: checkinId,
+        centre_id: centreId,
+        referral_received: true,
+        patient_count: 1,
+        hospital_name: form.place || null,
+        referral_centre: form.doctor_name || form.visitor_name || null,
+        notes: form.notes || null,
+      } as any);
+    }
+
+    toast.success("Visit added");
+    setForm({
+      visitor_type: "doctor", visitor_name: "", doctor_name: "", place: "",
+      designation: "", contact_number: "", purpose: "", notes: "",
+    });
+    setCoords(null);
+    setReferral(false);
+    setOpen(false);
+    onAdded();
     setLoading(false);
   };
 
@@ -97,26 +124,29 @@ export default function AddVisitDialog({ checkinId, onAdded }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1">
-          <Plus className="h-4 w-4" /> Add Visit
-        </Button>
+        {trigger ?? (
+          <Button size="sm" className="gap-1">
+            <Plus className="h-4 w-4" /> Add Visit
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Visit</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* GPS Capture - mandatory */}
+          {/* GPS Capture - optional */}
           <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
             <Label className="flex items-center gap-1 text-sm">
-              <MapPin className="h-4 w-4" /> Visit Location *
+              <MapPin className="h-4 w-4" /> Location{" "}
+              <span className="text-muted-foreground text-xs font-normal">(optional)</span>
             </Label>
             {coords ? (
               <p className="text-xs text-success font-medium">
                 ✓ Captured: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">GPS is required for every visit.</p>
+              <p className="text-xs text-muted-foreground">Tap to record where this visit happened.</p>
             )}
             {gpsError && (
               <div className="flex items-start gap-1 text-xs text-destructive">
@@ -131,7 +161,10 @@ export default function AddVisitDialog({ checkinId, onAdded }: Props) {
 
           <div className="space-y-2">
             <Label>Visitor Type *</Label>
-            <Select value={form.visitor_type} onValueChange={(v) => setForm((p) => ({ ...p, visitor_type: v as VisitorType }))}>
+            <Select
+              value={form.visitor_type}
+              onValueChange={(v) => setForm((p) => ({ ...p, visitor_type: v as VisitorType }))}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="doctor">Doctor</SelectItem>
@@ -156,32 +189,40 @@ export default function AddVisitDialog({ checkinId, onAdded }: Props) {
           )}
 
           <div className="space-y-2">
-            <Label>Place *</Label>
-            <Input
-              value={form.place}
-              onChange={set("place")}
-              placeholder="Hospital / clinic / area name"
-              required
-            />
+            <Label>Place</Label>
+            <Input value={form.place} onChange={set("place")} placeholder="Hospital / clinic / area" />
           </div>
 
-          <div className="space-y-2">
-            <Label>Designation</Label>
-            <Input value={form.designation} onChange={set("designation")} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Designation</Label>
+              <Input value={form.designation} onChange={set("designation")} />
+            </div>
+            <div className="space-y-2">
+              <Label>Contact</Label>
+              <Input value={form.contact_number} onChange={set("contact_number")} type="tel" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Contact Number</Label>
-            <Input value={form.contact_number} onChange={set("contact_number")} type="tel" />
-          </div>
+
           <div className="space-y-2">
             <Label>Purpose</Label>
             <Input value={form.purpose} onChange={set("purpose")} />
           </div>
+
           <div className="space-y-2">
             <Label>Notes</Label>
             <Textarea value={form.notes} onChange={set("notes")} rows={2} />
           </div>
-          <Button type="submit" className="w-full" disabled={loading || !coords}>
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label className="text-sm">Mark as Referral</Label>
+              <p className="text-xs text-muted-foreground">Did this visit produce a referral?</p>
+            </div>
+            <Switch checked={referral} onCheckedChange={setReferral} />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Saving..." : "Save Visit"}
           </Button>
         </form>

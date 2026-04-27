@@ -205,6 +205,54 @@ export type Database = {
           },
         ]
       }
+      leave_requests: {
+        Row: {
+          admin_comments: string | null
+          centre_id: string | null
+          created_at: string
+          from_date: string
+          id: string
+          leave_type: Database["public"]["Enums"]["leave_kind"]
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["leave_status"]
+          to_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_comments?: string | null
+          centre_id?: string | null
+          created_at?: string
+          from_date: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_kind"]
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["leave_status"]
+          to_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_comments?: string | null
+          centre_id?: string | null
+          created_at?: string
+          from_date?: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_kind"]
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["leave_status"]
+          to_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       monthly_claims: {
         Row: {
           admin_comments: string | null
@@ -303,6 +351,57 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      procedures: {
+        Row: {
+          centre_id: string
+          checkin_id: string | null
+          created_at: string
+          doctor_name: string | null
+          estimated_value: number | null
+          hospital_name: string | null
+          id: string
+          notes: string | null
+          patient_name: string
+          procedure_date: string
+          procedure_type: Database["public"]["Enums"]["procedure_kind"]
+          updated_at: string
+          user_id: string
+          visit_id: string | null
+        }
+        Insert: {
+          centre_id: string
+          checkin_id?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          estimated_value?: number | null
+          hospital_name?: string | null
+          id?: string
+          notes?: string | null
+          patient_name: string
+          procedure_date?: string
+          procedure_type: Database["public"]["Enums"]["procedure_kind"]
+          updated_at?: string
+          user_id: string
+          visit_id?: string | null
+        }
+        Update: {
+          centre_id?: string
+          checkin_id?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          estimated_value?: number | null
+          hospital_name?: string | null
+          id?: string
+          notes?: string | null
+          patient_name?: string
+          procedure_date?: string
+          procedure_type?: Database["public"]["Enums"]["procedure_kind"]
+          updated_at?: string
+          user_id?: string
+          visit_id?: string | null
         }
         Relationships: []
       }
@@ -550,6 +649,9 @@ export type Database = {
       app_role: "admin" | "staff"
       claim_status: "draft" | "submitted" | "approved" | "rejected"
       km_entry_type: "gps" | "manual"
+      leave_kind: "casual" | "sick" | "earned" | "unpaid" | "other"
+      leave_status: "pending" | "approved" | "rejected" | "cancelled"
+      procedure_kind: "cag" | "ptca" | "other"
       procedure_type: "cag" | "ptca" | "other"
       service_type: "lab" | "opd" | "scan" | "admission"
       visitor_type: "doctor" | "lab" | "ambulance_driver" | "hospital" | "other"
@@ -683,6 +785,9 @@ export const Constants = {
       app_role: ["admin", "staff"],
       claim_status: ["draft", "submitted", "approved", "rejected"],
       km_entry_type: ["gps", "manual"],
+      leave_kind: ["casual", "sick", "earned", "unpaid", "other"],
+      leave_status: ["pending", "approved", "rejected", "cancelled"],
+      procedure_kind: ["cag", "ptca", "other"],
       procedure_type: ["cag", "ptca", "other"],
       service_type: ["lab", "opd", "scan", "admission"],
       visitor_type: ["doctor", "lab", "ambulance_driver", "hospital", "other"],
