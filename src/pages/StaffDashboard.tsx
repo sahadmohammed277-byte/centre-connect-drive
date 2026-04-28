@@ -8,12 +8,13 @@ import AddProcedureDialog from "@/components/staff/AddProcedureDialog";
 import AddLeaveDialog from "@/components/staff/AddLeaveDialog";
 import VisitsList from "@/components/staff/VisitsList";
 import ProceduresList from "@/components/staff/ProceduresList";
+import PaymentsSummary from "@/components/staff/PaymentsSummary";
 import LeaveList from "@/components/staff/LeaveList";
 import ActivityFeed from "@/components/staff/ActivityFeed";
 import WeeklySummary from "@/components/staff/WeeklySummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartPulse, CalendarDays, Activity } from "lucide-react";
+import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartHandshake, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function StaffDashboard() {
