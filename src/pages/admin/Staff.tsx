@@ -27,6 +27,8 @@ export default function StaffPage() {
   const [search, setSearch] = useState("");
   const [centreFilter, setCentreFilter] = useState("all");
   const [open, setOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ user_id: string; full_name: string; employee_id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
