@@ -225,9 +225,28 @@ export default function StaffPage() {
                   {last ? new Date(last).toLocaleDateString() : "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="sm" variant="outline" onClick={() => toggleActive(p)}>
-                    {p.is_active ? "Disable" : "Enable"}
-                  </Button>
+                  <div className="flex items-center justify-end gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => {
+                              setResetTarget({ user_id: p.user_id, full_name: p.full_name, employee_id: p.employee_id });
+                              setResetOpen(true);
+                            }}
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reset Credentials</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button size="sm" variant="outline" onClick={() => toggleActive(p)}>
+                      {p.is_active ? "Disable" : "Enable"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
