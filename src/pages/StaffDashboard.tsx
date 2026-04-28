@@ -14,6 +14,7 @@ import ActivityFeed from "@/components/staff/ActivityFeed";
 import WeeklySummary from "@/components/staff/WeeklySummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartHandshake, Wallet, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,6 +23,7 @@ export default function StaffDashboard() {
   const { todayCheckin, loading } = useCheckin();
   const [centreName, setCentreName] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [referralFilter, setReferralFilter] = useState<"all" | "pending" | "released">("all");
 
   useEffect(() => {
     if (profile?.centre_id) {
@@ -74,14 +76,14 @@ export default function StaffDashboard() {
             <TabsTrigger value="visits" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
               <Stethoscope className="h-4 w-4" /> Visits
             </TabsTrigger>
-            <TabsTrigger value="procedures" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
-              <HeartPulse className="h-4 w-4" /> Cases
+            <TabsTrigger value="referrals" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <HeartHandshake className="h-4 w-4" /> Referrals
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+              <Wallet className="h-4 w-4" /> Payments
             </TabsTrigger>
             <TabsTrigger value="leave" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
               <CalendarDays className="h-4 w-4" /> Leave
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
-              <Activity className="h-4 w-4" /> Feed
             </TabsTrigger>
           </TabsList>
 
@@ -90,6 +92,10 @@ export default function StaffDashboard() {
             <StartDayCard />
             <IndividualSummary refreshKey={refreshKey} />
             <WeeklySummary refreshKey={refreshKey} />
+            <div>
+              <h2 className="text-sm font-semibold mb-2">Today's Activity</h2>
+              <ActivityFeed refreshKey={refreshKey} />
+            </div>
           </TabsContent>
 
           {/* Visits */}
@@ -111,13 +117,34 @@ export default function StaffDashboard() {
             )}
           </TabsContent>
 
-          {/* Procedures */}
-          <TabsContent value="procedures" className="space-y-4 mt-0">
+          {/* Referrals */}
+          <TabsContent value="referrals" className="space-y-3 mt-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">My Procedures</h2>
+              <h2 className="text-sm font-semibold">My Referrals</h2>
               <AddProcedureDialog checkinId={todayCheckin?.id} onAdded={refresh} />
             </div>
-            <ProceduresList refreshKey={refreshKey} onChanged={refresh} />
+            <div className="flex items-center gap-2">
+              {(["all", "pending", "released"] as const).map((f) => (
+                <Badge
+                  key={f}
+                  onClick={() => setReferralFilter(f)}
+                  className={`cursor-pointer capitalize ${
+                    referralFilter === f
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {f === "released" ? "Paid" : f}
+                </Badge>
+              ))}
+            </div>
+            <ProceduresList refreshKey={refreshKey} onChanged={refresh} filter={referralFilter} />
+          </TabsContent>
+
+          {/* Payments */}
+          <TabsContent value="payments" className="space-y-3 mt-0">
+            <h2 className="text-sm font-semibold">Payments by Doctor</h2>
+            <PaymentsSummary refreshKey={refreshKey} />
           </TabsContent>
 
           {/* Leave */}
@@ -127,12 +154,6 @@ export default function StaffDashboard() {
               <AddLeaveDialog onAdded={refresh} />
             </div>
             <LeaveList refreshKey={refreshKey} onChanged={refresh} />
-          </TabsContent>
-
-          {/* Activity */}
-          <TabsContent value="activity" className="space-y-4 mt-0">
-            <h2 className="text-sm font-semibold">Today's Activity</h2>
-            <ActivityFeed refreshKey={refreshKey} />
           </TabsContent>
         </Tabs>
       </main>
