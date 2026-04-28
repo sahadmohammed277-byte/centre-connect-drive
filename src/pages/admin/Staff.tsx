@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableShell } from "@/components/admin/DataTableShell";
-import { Plus, Lock } from "lucide-react";
+import { ResetCredentialsDialog } from "@/components/admin/ResetCredentialsDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 export default function StaffPage() {
