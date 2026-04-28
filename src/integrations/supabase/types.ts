@@ -364,7 +364,14 @@ export type Database = {
           hospital_name: string | null
           id: string
           notes: string | null
+          paid_at: string | null
           patient_name: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_updated_by:
+            | Database["public"]["Enums"]["payment_updater"]
+            | null
+          payment_updated_user_id: string | null
+          phone_number: string | null
           procedure_date: string
           procedure_type: Database["public"]["Enums"]["procedure_kind"]
           updated_at: string
@@ -380,7 +387,14 @@ export type Database = {
           hospital_name?: string | null
           id?: string
           notes?: string | null
+          paid_at?: string | null
           patient_name: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_updated_by?:
+            | Database["public"]["Enums"]["payment_updater"]
+            | null
+          payment_updated_user_id?: string | null
+          phone_number?: string | null
           procedure_date?: string
           procedure_type: Database["public"]["Enums"]["procedure_kind"]
           updated_at?: string
@@ -396,7 +410,14 @@ export type Database = {
           hospital_name?: string | null
           id?: string
           notes?: string | null
+          paid_at?: string | null
           patient_name?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_updated_by?:
+            | Database["public"]["Enums"]["payment_updater"]
+            | null
+          payment_updated_user_id?: string | null
+          phone_number?: string | null
           procedure_date?: string
           procedure_type?: Database["public"]["Enums"]["procedure_kind"]
           updated_at?: string
@@ -651,6 +672,8 @@ export type Database = {
       km_entry_type: "gps" | "manual"
       leave_kind: "casual" | "sick" | "earned" | "unpaid" | "other"
       leave_status: "pending" | "approved" | "rejected" | "cancelled"
+      payment_status: "pending" | "released"
+      payment_updater: "staff" | "finance"
       procedure_kind: "cag" | "ptca" | "other"
       procedure_type: "cag" | "ptca" | "other"
       service_type: "lab" | "opd" | "scan" | "admission"
@@ -787,6 +810,8 @@ export const Constants = {
       km_entry_type: ["gps", "manual"],
       leave_kind: ["casual", "sick", "earned", "unpaid", "other"],
       leave_status: ["pending", "approved", "rejected", "cancelled"],
+      payment_status: ["pending", "released"],
+      payment_updater: ["staff", "finance"],
       procedure_kind: ["cag", "ptca", "other"],
       procedure_type: ["cag", "ptca", "other"],
       service_type: ["lab", "opd", "scan", "admission"],
