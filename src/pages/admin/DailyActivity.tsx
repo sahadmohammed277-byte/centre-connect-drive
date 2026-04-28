@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +14,18 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
-import { Eye } from "lucide-react";
+import { Eye, Calendar as CalendarIcon } from "lucide-react";
+
+function todayISO() {
+  return new Date().toISOString().split("T")[0];
+}
+function toISO(d: Date) {
+  return d.toISOString().split("T")[0];
+}
 
 export default function DailyActivityPage() {
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [fromDate, setFromDate] = useState(todayISO());
+  const [toDate, setToDate] = useState(todayISO());
   const [centreFilter, setCentreFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -30,7 +38,7 @@ export default function DailyActivityPage() {
   const [detailReferrals, setDetailReferrals] = useState<any[]>([]);
 
   useEffect(() => { void loadMeta(); }, []);
-  useEffect(() => { void loadActivity(); }, [date]);
+  useEffect(() => { void loadActivity(); }, [fromDate, toDate]);
 
   async function loadMeta() {
     const [c, p] = await Promise.all([
@@ -43,18 +51,30 @@ export default function DailyActivityPage() {
 
   async function loadActivity() {
     setLoading(true);
+    const start = fromDate <= toDate ? fromDate : toDate;
+    const end = fromDate <= toDate ? toDate : fromDate;
     const [checkinsRes, visitsRes] = await Promise.all([
-      supabase.from("daily_checkins").select("*").eq("checkin_date", date),
-      supabase.from("visits").select("user_id, visitor_type").eq("visit_date", date),
+      supabase.from("daily_checkins").select("*")
+        .gte("checkin_date", start)
+        .lte("checkin_date", end),
+      supabase.from("visits").select("user_id, visitor_type, visit_date")
+        .gte("visit_date", start)
+        .lte("visit_date", end),
     ]);
     const built = (checkinsRes.data || []).map((ci: any) => {
-      const userVisits = (visitsRes.data || []).filter((v: any) => v.user_id === ci.user_id);
+      const userVisits = (visitsRes.data || []).filter(
+        (v: any) => v.user_id === ci.user_id && v.visit_date === ci.checkin_date
+      );
       return {
         ...ci,
         visit_count: userVisits.length,
         doctor_count: userVisits.filter((v: any) => v.visitor_type === "doctor").length,
       };
     });
+    built.sort((a: any, b: any) =>
+      (b.checkin_date || "").localeCompare(a.checkin_date || "") ||
+      (b.checkin_time || "").localeCompare(a.checkin_time || "")
+    );
     setRows(built);
     setLoading(false);
   }
@@ -68,6 +88,39 @@ export default function DailyActivityPage() {
     setDetailVisits(v.data || []);
     setDetailReferrals(r.data || []);
   }
+
+  function applyQuick(range: "today" | "week" | "month") {
+    const now = new Date();
+    if (range === "today") {
+      const t = toISO(now);
+      setFromDate(t); setToDate(t);
+    } else if (range === "week") {
+      const d = new Date(now);
+      const day = d.getDay(); // 0 Sun
+      const diffToMon = (day + 6) % 7;
+      d.setDate(d.getDate() - diffToMon);
+      setFromDate(toISO(d));
+      setToDate(toISO(now));
+    } else {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      setFromDate(toISO(first));
+      setToDate(toISO(now));
+    }
+  }
+
+  const activeQuick = useMemo(() => {
+    const now = new Date();
+    const t = toISO(now);
+    if (fromDate === t && toDate === t) return "today";
+    const d = new Date(now);
+    const day = d.getDay();
+    const diffToMon = (day + 6) % 7;
+    d.setDate(d.getDate() - diffToMon);
+    if (fromDate === toISO(d) && toDate === t) return "week";
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (fromDate === toISO(first) && toDate === t) return "month";
+    return "";
+  }, [fromDate, toDate]);
 
   const filtered = rows
     .filter((r) => centreFilter === "all" || r.centre_id === centreFilter)
@@ -85,12 +138,52 @@ export default function DailyActivityPage() {
         onSearchChange={setSearch}
         searchPlaceholder="Search staff…"
         isEmpty={!loading && filtered.length === 0}
-        emptyMessage="No activity for this date."
+        emptyMessage="No activity in this date range."
         filters={
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs">Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[160px]" />
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">From Date</Label>
+              <div className="relative">
+                <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="date"
+                  value={fromDate}
+                  placeholder="From Date"
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-[170px] pl-9"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">To Date</Label>
+              <div className="relative">
+                <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="date"
+                  value={toDate}
+                  placeholder="To Date"
+                  min={fromDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-[170px] pl-9"
+                />
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={activeQuick === "today" ? "default" : "outline"}
+                onClick={() => applyQuick("today")}
+              >Today</Button>
+              <Button
+                size="sm"
+                variant={activeQuick === "week" ? "default" : "outline"}
+                onClick={() => applyQuick("week")}
+              >This Week</Button>
+              <Button
+                size="sm"
+                variant={activeQuick === "month" ? "default" : "outline"}
+                onClick={() => applyQuick("month")}
+              >This Month</Button>
             </div>
             <Select value={centreFilter} onValueChange={setCentreFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
@@ -112,6 +205,7 @@ export default function DailyActivityPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Date</TableHead>
               <TableHead>Staff</TableHead>
               <TableHead>Centre</TableHead>
               <TableHead className="text-right">Visits</TableHead>
@@ -128,6 +222,7 @@ export default function DailyActivityPage() {
               const c = centres.find((x) => x.id === r.centre_id);
               return (
                 <TableRow key={r.id}>
+                  <TableCell className="text-xs">{r.checkin_date}</TableCell>
                   <TableCell className="font-medium">{p?.full_name || "—"}</TableCell>
                   <TableCell>{c?.name || "—"}</TableCell>
                   <TableCell className="text-right">{r.visit_count}</TableCell>
@@ -150,7 +245,7 @@ export default function DailyActivityPage() {
       <Dialog open={!!detail} onOpenChange={() => setDetail(null)}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Day Details — {date}</DialogTitle>
+            <DialogTitle>Day Details — {detail?.checkin_date}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <section>
