@@ -256,5 +256,7 @@ export default function StaffPage() {
         </TableBody>
       </Table>
     </DataTableShell>
+    <ResetCredentialsDialog open={resetOpen} onOpenChange={setResetOpen} staff={resetTarget} />
+    </>
   );
 }
