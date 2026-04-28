@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableShell } from "@/components/admin/DataTableShell";
-import { Plus, Lock } from "lucide-react";
+import { ResetCredentialsDialog } from "@/components/admin/ResetCredentialsDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 export default function StaffPage() {
@@ -25,6 +27,8 @@ export default function StaffPage() {
   const [search, setSearch] = useState("");
   const [centreFilter, setCentreFilter] = useState("all");
   const [open, setOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ user_id: string; full_name: string; employee_id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -117,6 +121,8 @@ export default function StaffPage() {
     });
 
   return (
+    <>
+
     <DataTableShell
       searchValue={search}
       onSearchChange={setSearch}
@@ -221,9 +227,28 @@ export default function StaffPage() {
                   {last ? new Date(last).toLocaleDateString() : "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="sm" variant="outline" onClick={() => toggleActive(p)}>
-                    {p.is_active ? "Disable" : "Enable"}
-                  </Button>
+                  <div className="flex items-center justify-end gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => {
+                              setResetTarget({ user_id: p.user_id, full_name: p.full_name, employee_id: p.employee_id });
+                              setResetOpen(true);
+                            }}
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reset Credentials</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button size="sm" variant="outline" onClick={() => toggleActive(p)}>
+                      {p.is_active ? "Disable" : "Enable"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -231,5 +256,7 @@ export default function StaffPage() {
         </TableBody>
       </Table>
     </DataTableShell>
+    <ResetCredentialsDialog open={resetOpen} onOpenChange={setResetOpen} staff={resetTarget} />
+    </>
   );
 }

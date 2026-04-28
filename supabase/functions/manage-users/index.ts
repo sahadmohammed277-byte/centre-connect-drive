@@ -54,7 +54,68 @@ serve(async (req) => {
       return json({ error: "Invalid request body" }, 400);
     }
 
-    const { action, employee_id, full_name, email, password, centre_name, role } = body as Record<string, unknown>;
+    const { action, employee_id, full_name, email, password, centre_name, role, target_user_id } = body as Record<string, unknown>;
+
+    if (action === "reset_email" || action === "reset_password") {
+      if (typeof target_user_id !== "string" || target_user_id.length < 10) {
+        return json({ error: "Invalid target_user_id" }, 400);
+      }
+      // Don't allow modifying other admins
+      const { data: targetRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", target_user_id)
+        .maybeSingle();
+      if (targetRole?.role === "admin" && target_user_id !== userData.user.id) {
+        return json({ error: "Cannot modify another admin's credentials" }, 403);
+      }
+
+      if (action === "reset_email") {
+        if (typeof email !== "string" || !EMAIL_RE.test(email) || email.length > 255) {
+          return json({ error: "Invalid email" }, 400);
+        }
+        const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
+          email,
+          email_confirm: true,
+        });
+        if (updErr) {
+          console.error("Email reset error:", updErr);
+          const safe = updErr.message?.toLowerCase().includes("registered")
+            ? "Email already in use"
+            : "Failed to update email";
+          return json({ error: safe }, 400);
+        }
+        await supabaseAdmin.from("audit_logs").insert({
+          action: "reset_email",
+          user_id: userData.user.id,
+          record_id: target_user_id,
+          table_name: "auth.users",
+          new_values: { email },
+        });
+        return json({ success: true });
+      }
+
+      if (action === "reset_password") {
+        if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+          return json({ error: "Password must be 8-128 characters" }, 400);
+        }
+        const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
+          password,
+        });
+        if (updErr) {
+          console.error("Password reset error:", updErr);
+          return json({ error: "Failed to update password" }, 400);
+        }
+        await supabaseAdmin.from("audit_logs").insert({
+          action: "reset_password",
+          user_id: userData.user.id,
+          record_id: target_user_id,
+          table_name: "auth.users",
+          new_values: { reset_at: new Date().toISOString() },
+        });
+        return json({ success: true });
+      }
+    }
 
     if (action === "create_user") {
       // ---- Input validation ----
