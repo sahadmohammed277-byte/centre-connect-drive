@@ -121,6 +121,8 @@ export default function StaffPage() {
     });
 
   return (
+    <>
+
     <DataTableShell
       searchValue={search}
       onSearchChange={setSearch}
