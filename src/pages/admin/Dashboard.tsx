@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/select";
 import { DataTableShell } from "@/components/admin/DataTableShell";
 import { fetchSettings, calcSummary, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
-import { Users, UserX, MapPin, TrendingUp, IndianRupee, AlertTriangle, Stethoscope, Activity, HeartHandshake } from "lucide-react";
+import { Users, UserX, MapPin, TrendingUp, IndianRupee, AlertTriangle, Stethoscope, Activity, HeartHandshake, CheckCircle2, XCircle, Percent } from "lucide-react";
+import ReferralAnalytics from "@/components/admin/ReferralAnalytics";
 
 interface Row {
   profile: any;
@@ -184,6 +185,11 @@ export default function AdminDashboardPage() {
           <StatCard icon={IndianRupee} label="Revenue Today" value={`₹${totalRevenue.toFixed(0)}`} tone="success" />
           <StatCard icon={IndianRupee} label="TA + DA Today" value={`₹${totalAllowance.toFixed(0)}`} tone="neutral" />
         </div>
+      </Section>
+
+      {/* Referral analytics */}
+      <Section title="Referrals" subtitle="All-time procedure tracking & conversion">
+        <ReferralAnalytics />
       </Section>
 
       {/* Top performers */}
