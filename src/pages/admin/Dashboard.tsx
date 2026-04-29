@@ -187,6 +187,11 @@ export default function AdminDashboardPage() {
         </div>
       </Section>
 
+      {/* Referral analytics */}
+      <Section title="Referrals" subtitle="All-time procedure tracking & conversion">
+        <ReferralAnalytics />
+      </Section>
+
       {/* Top performers */}
       <Section title="Top Performers">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
