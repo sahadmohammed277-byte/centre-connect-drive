@@ -363,9 +363,11 @@ export type Database = {
           estimated_value: number | null
           hospital_name: string | null
           id: string
+          not_done_reason: string | null
           notes: string | null
           paid_at: string | null
           patient_name: string
+          payment_date: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           payment_updated_by:
             | Database["public"]["Enums"]["payment_updater"]
@@ -373,6 +375,7 @@ export type Database = {
           payment_updated_user_id: string | null
           phone_number: string | null
           procedure_date: string
+          procedure_status: Database["public"]["Enums"]["procedure_status"]
           procedure_type: Database["public"]["Enums"]["procedure_kind"]
           updated_at: string
           user_id: string
@@ -386,9 +389,11 @@ export type Database = {
           estimated_value?: number | null
           hospital_name?: string | null
           id?: string
+          not_done_reason?: string | null
           notes?: string | null
           paid_at?: string | null
           patient_name: string
+          payment_date?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           payment_updated_by?:
             | Database["public"]["Enums"]["payment_updater"]
@@ -396,6 +401,7 @@ export type Database = {
           payment_updated_user_id?: string | null
           phone_number?: string | null
           procedure_date?: string
+          procedure_status?: Database["public"]["Enums"]["procedure_status"]
           procedure_type: Database["public"]["Enums"]["procedure_kind"]
           updated_at?: string
           user_id: string
@@ -409,9 +415,11 @@ export type Database = {
           estimated_value?: number | null
           hospital_name?: string | null
           id?: string
+          not_done_reason?: string | null
           notes?: string | null
           paid_at?: string | null
           patient_name?: string
+          payment_date?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           payment_updated_by?:
             | Database["public"]["Enums"]["payment_updater"]
@@ -419,6 +427,7 @@ export type Database = {
           payment_updated_user_id?: string | null
           phone_number?: string | null
           procedure_date?: string
+          procedure_status?: Database["public"]["Enums"]["procedure_status"]
           procedure_type?: Database["public"]["Enums"]["procedure_kind"]
           updated_at?: string
           user_id?: string
@@ -675,6 +684,7 @@ export type Database = {
       payment_status: "pending" | "released"
       payment_updater: "staff" | "finance"
       procedure_kind: "cag" | "ptca" | "other"
+      procedure_status: "pending" | "done" | "not_done"
       procedure_type: "cag" | "ptca" | "other"
       service_type: "lab" | "opd" | "scan" | "admission"
       visitor_type: "doctor" | "lab" | "ambulance_driver" | "hospital" | "other"
@@ -813,6 +823,7 @@ export const Constants = {
       payment_status: ["pending", "released"],
       payment_updater: ["staff", "finance"],
       procedure_kind: ["cag", "ptca", "other"],
+      procedure_status: ["pending", "done", "not_done"],
       procedure_type: ["cag", "ptca", "other"],
       service_type: ["lab", "opd", "scan", "admission"],
       visitor_type: ["doctor", "lab", "ambulance_driver", "hospital", "other"],
