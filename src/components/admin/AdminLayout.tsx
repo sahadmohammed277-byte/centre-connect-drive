@@ -11,6 +11,7 @@ import {
   FileBarChart,
   CheckCircle2,
   CalendarCheck,
+  HeartHandshake,
   Settings as SettingsIcon,
   LogOut,
   Menu,
@@ -36,6 +37,7 @@ const items = [
   { to: "/admin/reports", label: "Reports", icon: FileBarChart },
   { to: "/admin/approvals", label: "Approvals", icon: CheckCircle2 },
   { to: "/admin/leaves", label: "Leave Requests", icon: CalendarCheck },
+  { to: "/admin/referrals", label: "Referrals", icon: HeartHandshake },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 
