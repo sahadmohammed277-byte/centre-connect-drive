@@ -23,7 +23,7 @@ export default function StaffDashboard() {
   const { todayCheckin, loading } = useCheckin();
   const [centreName, setCentreName] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [referralFilter, setReferralFilter] = useState<"all" | "pending" | "released">("all");
+  const [referralFilter, setReferralFilter] = useState<"all" | "pending" | "done" | "not_done">("all");
 
   useEffect(() => {
     if (profile?.centre_id) {
@@ -123,18 +123,18 @@ export default function StaffDashboard() {
               <h2 className="text-sm font-semibold">My Referrals</h2>
               <AddProcedureDialog checkinId={todayCheckin?.id} onAdded={refresh} />
             </div>
-            <div className="flex items-center gap-2">
-              {(["all", "pending", "released"] as const).map((f) => (
+            <div className="flex items-center gap-2 flex-wrap">
+              {(["all", "pending", "done", "not_done"] as const).map((f) => (
                 <Badge
                   key={f}
                   onClick={() => setReferralFilter(f)}
-                  className={`cursor-pointer capitalize ${
+                  className={`cursor-pointer ${
                     referralFilter === f
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  {f === "released" ? "Paid" : f}
+                  {f === "not_done" ? "Not Done" : f.charAt(0).toUpperCase() + f.slice(1)}
                 </Badge>
               ))}
             </div>
@@ -143,8 +143,9 @@ export default function StaffDashboard() {
 
           {/* Payments */}
           <TabsContent value="payments" className="space-y-3 mt-0">
-            <h2 className="text-sm font-semibold">Payments by Doctor</h2>
-            <PaymentsSummary refreshKey={refreshKey} />
+            <h2 className="text-sm font-semibold">Payments</h2>
+            <p className="text-xs text-muted-foreground">Only referrals with completed procedures are payable.</p>
+            <PaymentsSummary refreshKey={refreshKey} onChanged={refresh} />
           </TabsContent>
 
           {/* Leave */}
