@@ -30,14 +30,14 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/centres", label: "Centres", icon: Building2 },
-  { to: "/admin/staff", label: "Staff", icon: Users },
-  { to: "/admin/admins", label: "Admins", icon: ShieldCheck },
-  { to: "/admin/activity", label: "Daily Activity", icon: CalendarDays },
   { to: "/admin/reports", label: "Reports", icon: FileBarChart },
+  { to: "/admin/referrals", label: "Referrals", icon: HeartHandshake },
   { to: "/admin/approvals", label: "Approvals", icon: CheckCircle2 },
   { to: "/admin/leaves", label: "Leave Requests", icon: CalendarCheck },
-  { to: "/admin/referrals", label: "Referrals", icon: HeartHandshake },
+  { to: "/admin/centres", label: "Centres", icon: Building2 },
+  { to: "/admin/activity", label: "Daily Activity", icon: CalendarDays },
+  { to: "/admin/staff", label: "Staff", icon: Users },
+  { to: "/admin/admins", label: "Admins", icon: ShieldCheck },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 
