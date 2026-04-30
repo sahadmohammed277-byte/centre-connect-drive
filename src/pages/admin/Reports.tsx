@@ -66,22 +66,39 @@ export default function ReportsPage() {
 
   useEffect(() => { void run(); }, [from, to, centreFilter, staffFilter, rates, settings]);
 
+  // Realtime: re-run report when procedures or referrals change
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-reports-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "procedures" }, () => { void run(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => { void run(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_checkins" }, () => { void run(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "visits" }, () => { void run(); })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [from, to, centreFilter, staffFilter]);
+
   async function run() {
     setLoading(true);
     let cq = supabase.from("daily_checkins").select("*").gte("checkin_date", from).lte("checkin_date", to);
     let vq = supabase.from("visits").select("user_id, visitor_type, visit_date, centre_id").gte("visit_date", from).lte("visit_date", to);
-    let rq = supabase.from("referrals").select("user_id, centre_id, procedure_type, patient_count, referral_date").gte("referral_date", from).lte("referral_date", to);
+    // Use procedures table (single source of truth for referrals + procedure status)
+    let pq = supabase
+      .from("procedures")
+      .select("user_id, centre_id, procedure_type, procedure_status, estimated_value, procedure_date")
+      .gte("procedure_date", from).lte("procedure_date", to);
     if (centreFilter !== "all") {
       cq = cq.eq("centre_id", centreFilter);
       vq = vq.eq("centre_id", centreFilter);
-      rq = rq.eq("centre_id", centreFilter);
+      pq = pq.eq("centre_id", centreFilter);
     }
     if (staffFilter !== "all") {
       cq = cq.eq("user_id", staffFilter);
       vq = vq.eq("user_id", staffFilter);
-      rq = rq.eq("user_id", staffFilter);
+      pq = pq.eq("user_id", staffFilter);
     }
-    const [cRes, vRes, rRes] = await Promise.all([cq, vq, rq]);
+    const [cRes, vRes, pRes] = await Promise.all([cq, vq, pq]);
     const map: Record<string, StaffRow> = {};
     const ensure = (uid: string, centre_id: string | null) => {
       if (!map[uid]) {
@@ -117,18 +134,21 @@ export default function ReportsPage() {
       if (count >= settings.min_doctor_visits_for_da) row.da_eligible_days += 1;
     });
 
-    // referrals & procedure counts (per-centre rates for revenue)
-    (rRes.data || []).forEach((r: any) => {
+    // Referrals = total procedure records; CAG/PTCA = only DONE procedures
+    (pRes.data || []).forEach((r: any) => {
       const row = ensure(r.user_id, r.centre_id);
-      const count = Number(r.patient_count) || 1;
-      row.referrals += count;
+      row.referrals += 1;
+      if (r.procedure_status !== "done") return;
       const rate = rates[r.centre_id] || { cag: 0, ptca: 0 };
-      if (r.procedure_type === "cag") {
-        row.cag += count;
-        row.revenue += count * rate.cag;
-      } else if (r.procedure_type === "ptca") {
-        row.ptca += count;
-        row.revenue += count * rate.ptca;
+      const type = String(r.procedure_type || "").toLowerCase();
+      if (type === "cag") {
+        row.cag += 1;
+        row.revenue += rate.cag || Number(r.estimated_value) || 0;
+      } else if (type === "ptca") {
+        row.ptca += 1;
+        row.revenue += rate.ptca || Number(r.estimated_value) || 0;
+      } else {
+        row.revenue += Number(r.estimated_value) || 0;
       }
     });
 

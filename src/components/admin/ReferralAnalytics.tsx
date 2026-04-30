@@ -21,13 +21,21 @@ export default function ReferralAnalytics() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
   useEffect(() => {
-    void Promise.all([
-      supabase.from("procedures").select("id, user_id, doctor_name, procedure_status, payment_status, estimated_value"),
-      supabase.from("profiles").select("user_id, full_name"),
-    ]).then(([p, pr]) => {
-      setProcs(((p.data as any) || []) as Proc[]);
-      setProfiles(((pr.data as any) || []) as Profile[]);
-    });
+    const fetchAll = () => {
+      void Promise.all([
+        supabase.from("procedures").select("id, user_id, doctor_name, procedure_status, payment_status, estimated_value"),
+        supabase.from("profiles").select("user_id, full_name"),
+      ]).then(([p, pr]) => {
+        setProcs(((p.data as any) || []) as Proc[]);
+        setProfiles(((pr.data as any) || []) as Profile[]);
+      });
+    };
+    fetchAll();
+    const ch = supabase
+      .channel("referral-analytics-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "procedures" }, fetchAll)
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
   }, []);
 
   const total = procs.length;
