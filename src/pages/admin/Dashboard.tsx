@@ -37,40 +37,54 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     void load();
+    // Realtime sync: refresh dashboard when procedures change (status, payment, inserts, deletes)
+    const ch = supabase
+      .channel("admin-dashboard-procedures")
+      .on("postgres_changes", { event: "*", schema: "public", table: "procedures" }, () => {
+        void load();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "referrals" }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
   }, []);
 
   async function load() {
     setLoading(true);
     const today = new Date().toISOString().split("T")[0];
-    const [centresRes, profilesRes, checkinsRes, visitsRes, refRes, s] = await Promise.all([
+    const [centresRes, profilesRes, checkinsRes, visitsRes, procRes, s] = await Promise.all([
       supabase.from("centres").select("*").order("name"),
       supabase.from("profiles").select("*"),
       supabase.from("daily_checkins").select("*").eq("checkin_date", today),
       supabase.from("visits").select("user_id, visitor_type, doctor_name, visitor_name, visit_date").eq("visit_date", today),
       supabase
-        .from("referrals")
-        .select("user_id, procedure_type, patient_count, estimated_value, referral_date")
-        .eq("referral_date", today),
+        .from("procedures")
+        .select("user_id, procedure_type, procedure_status, estimated_value, procedure_date")
+        .eq("procedure_date", today),
       fetchSettings(),
     ]);
     setSettings(s);
     setCentres(centresRes.data || []);
 
-    const refsByUser = new Map<string, any[]>();
-    ((refRes.data as any[]) || []).forEach((r) => {
-      const arr = refsByUser.get(r.user_id) || [];
+    const procsByUser = new Map<string, any[]>();
+    ((procRes.data as any[]) || []).forEach((r) => {
+      const arr = procsByUser.get(r.user_id) || [];
       arr.push(r);
-      refsByUser.set(r.user_id, arr);
+      procsByUser.set(r.user_id, arr);
     });
 
     const built: Row[] = (profilesRes.data || []).map((p: any) => {
       const checkin = (checkinsRes.data || []).find((c: any) => c.user_id === p.user_id);
       const centre = (centresRes.data || []).find((c: any) => c.id === p.centre_id);
       const userVisits = (visitsRes.data || []).filter((v: any) => v.user_id === p.user_id);
-      const userRefs = refsByUser.get(p.user_id) || [];
-      const cag = userRefs.filter((r) => r.procedure_type === "cag").reduce((a, r) => a + (r.patient_count || 1), 0);
-      const ptca = userRefs.filter((r) => r.procedure_type === "ptca").reduce((a, r) => a + (r.patient_count || 1), 0);
-      const revenue = userRefs.reduce((a, r) => a + (Number(r.estimated_value) || 0), 0);
+      const userProcs = procsByUser.get(p.user_id) || [];
+      // CAG/PTCA counts only procedures marked DONE
+      const doneProcs = userProcs.filter((r) => r.procedure_status === "done");
+      const cag = doneProcs.filter((r) => r.procedure_type === "cag").length;
+      const ptca = doneProcs.filter((r) => r.procedure_type === "ptca").length;
+      const revenue = doneProcs.reduce((a, r) => a + (Number(r.estimated_value) || 0), 0);
+      const userRefs = userProcs; // referralCount = total procedures (referrals) for the day
       return {
         profile: p,
         checkin,
