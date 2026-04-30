@@ -60,6 +60,18 @@ export default function ReferralsPage() {
   useEffect(() => { void loadData(); }, [fromDate, toDate]);
   useEffect(() => { setPage(1); }, [centreFilter, staffFilter, statusFilter, search, fromDate, toDate]);
 
+  // Realtime sync — auto-refresh on any procedure change
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-referrals-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "procedures" }, () => {
+        void loadData();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromDate, toDate]);
+
   async function loadMeta() {
     const [c, p] = await Promise.all([
       supabase.from("centres").select("id, name").order("name"),
