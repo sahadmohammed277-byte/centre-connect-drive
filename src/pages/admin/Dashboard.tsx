@@ -182,16 +182,68 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Page heading */}
-      <div className="flex items-end justify-between flex-wrap gap-2">
+      <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">Today's Overview</h2>
           <p className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+            {fromDate === toDate
+              ? new Date(fromDate).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+              : `${fromDate} → ${toDate}`}
           </p>
         </div>
         <Badge variant="outline" className="gap-1.5 font-normal">
           <span className="h-1.5 w-1.5 rounded-full bg-success" /> Live
         </Badge>
+      </div>
+
+      {/* Filters: date range + centre + staff */}
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">From</Label>
+          <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9 w-[160px]" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">To</Label>
+          <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9 w-[160px]" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Centre</Label>
+          <Select value={centreFilter} onValueChange={setCentreFilter}>
+            <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Centres</SelectItem>
+              {centres.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Staff</Label>
+          <Select value={staffFilter} onValueChange={setStaffFilter}>
+            <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Staff</SelectItem>
+              {rows.map((r) => (
+                <SelectItem key={r.profile.user_id} value={r.profile.user_id}>{r.profile.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9"
+          onClick={() => {
+            const t = todayStr();
+            setFromDate(t);
+            setToDate(t);
+            setCentreFilter("all");
+            setStaffFilter("all");
+          }}
+        >
+          Reset
+        </Button>
       </div>
 
       {/* Activity section */}
