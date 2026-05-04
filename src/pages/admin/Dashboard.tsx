@@ -268,7 +268,7 @@ export default function AdminDashboardPage() {
 
       {/* Referral analytics */}
       <Section title="Referrals" subtitle="All-time procedure tracking & conversion">
-        <ReferralAnalytics />
+        <ReferralAnalytics fromDate={fromDate} toDate={toDate} centreId={centreFilter === "all" ? undefined : centreFilter} userId={staffFilter === "all" ? undefined : staffFilter} />
       </Section>
 
       {/* Top performers */}
