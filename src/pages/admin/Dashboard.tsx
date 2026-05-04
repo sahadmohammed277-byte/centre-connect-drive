@@ -125,6 +125,7 @@ export default function AdminDashboardPage() {
 
   const filtered = rows
     .filter((r) => centreFilter === "all" || r.profile.centre_id === centreFilter)
+    .filter((r) => staffFilter === "all" || r.profile.user_id === staffFilter)
     .filter((r) => {
       const q = search.toLowerCase();
       return (
@@ -135,14 +136,19 @@ export default function AdminDashboardPage() {
       );
     });
 
-  const checkedIn = rows.filter((r) => r.checkin).length;
-  const notCheckedIn = rows.length - checkedIn;
-  const totalVisits = rows.reduce((a, r) => a + r.visitCount, 0);
-  const totalKm = rows.reduce((a, r) => a + (r.checkin?.total_km ?? 0), 0);
-  const totalCag = rows.reduce((a, r) => a + r.cagCount, 0);
-  const totalPtca = rows.reduce((a, r) => a + r.ptcaCount, 0);
-  const totalRevenue = rows.reduce((a, r) => a + r.revenue, 0);
-  const totalAllowance = rows.reduce((a, r) => {
+  // Scope KPIs to centre + staff filters (date already applied at query level)
+  const scoped = rows
+    .filter((r) => centreFilter === "all" || r.profile.centre_id === centreFilter)
+    .filter((r) => staffFilter === "all" || r.profile.user_id === staffFilter);
+
+  const checkedIn = scoped.filter((r) => r.checkin).length;
+  const notCheckedIn = scoped.length - checkedIn;
+  const totalVisits = scoped.reduce((a, r) => a + r.visitCount, 0);
+  const totalKm = scoped.reduce((a, r) => a + (r.checkin?.total_km ?? 0), 0);
+  const totalCag = scoped.reduce((a, r) => a + r.cagCount, 0);
+  const totalPtca = scoped.reduce((a, r) => a + r.ptcaCount, 0);
+  const totalRevenue = scoped.reduce((a, r) => a + r.revenue, 0);
+  const totalAllowance = scoped.reduce((a, r) => {
     const sum = calcSummary(r.checkin?.total_km ?? 0, r.doctorCount, settings);
     return a + sum.total;
   }, 0);
