@@ -13,6 +13,9 @@ import { DataTableShell } from "@/components/admin/DataTableShell";
 import { fetchSettings, calcSummary, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
 import { Users, UserX, MapPin, TrendingUp, IndianRupee, AlertTriangle, Stethoscope, Activity, HeartHandshake, CheckCircle2, XCircle, Percent } from "lucide-react";
 import ReferralAnalytics from "@/components/admin/ReferralAnalytics";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface Row {
   profile: any;
