@@ -29,18 +29,22 @@ interface Row {
   referralCount: number;
 }
 
+const todayStr = () => new Date().toISOString().split("T")[0];
+
 export default function AdminDashboardPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [centres, setCentres] = useState<any[]>([]);
   const [centreFilter, setCentreFilter] = useState("all");
+  const [staffFilter, setStaffFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [topDoctors, setTopDoctors] = useState<{ name: string; count: number }[]>([]);
+  const [fromDate, setFromDate] = useState<string>(todayStr());
+  const [toDate, setToDate] = useState<string>(todayStr());
 
   useEffect(() => {
     void load();
-    // Realtime sync: refresh dashboard when procedures change (status, payment, inserts, deletes)
     const ch = supabase
       .channel("admin-dashboard-procedures")
       .on("postgres_changes", { event: "*", schema: "public", table: "procedures" }, () => {
@@ -51,20 +55,23 @@ export default function AdminDashboardPage() {
       })
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromDate, toDate, centreFilter, staffFilter]);
 
   async function load() {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
+    const from = fromDate || todayStr();
+    const to = toDate || fromDate || todayStr();
     const [centresRes, profilesRes, checkinsRes, visitsRes, procRes, s] = await Promise.all([
       supabase.from("centres").select("*").order("name"),
       supabase.from("profiles").select("*"),
-      supabase.from("daily_checkins").select("*").eq("checkin_date", today),
-      supabase.from("visits").select("user_id, visitor_type, doctor_name, visitor_name, visit_date").eq("visit_date", today),
+      supabase.from("daily_checkins").select("*").gte("checkin_date", from).lte("checkin_date", to),
+      supabase.from("visits").select("user_id, visitor_type, doctor_name, visitor_name, visit_date").gte("visit_date", from).lte("visit_date", to),
       supabase
         .from("procedures")
-        .select("user_id, procedure_type, procedure_status, estimated_value, procedure_date")
-        .eq("procedure_date", today),
+        .select("user_id, centre_id, procedure_type, procedure_status, estimated_value, procedure_date")
+        .gte("procedure_date", from)
+        .lte("procedure_date", to),
       fetchSettings(),
     ]);
     setSettings(s);
@@ -82,12 +89,10 @@ export default function AdminDashboardPage() {
       const centre = (centresRes.data || []).find((c: any) => c.id === p.centre_id);
       const userVisits = (visitsRes.data || []).filter((v: any) => v.user_id === p.user_id);
       const userProcs = procsByUser.get(p.user_id) || [];
-      // CAG/PTCA counts only procedures marked DONE
       const doneProcs = userProcs.filter((r) => r.procedure_status === "done");
       const cag = doneProcs.filter((r) => r.procedure_type === "cag").length;
       const ptca = doneProcs.filter((r) => r.procedure_type === "ptca").length;
       const revenue = doneProcs.reduce((a, r) => a + (Number(r.estimated_value) || 0), 0);
-      const userRefs = userProcs; // referralCount = total procedures (referrals) for the day
       return {
         profile: p,
         checkin,
@@ -97,12 +102,11 @@ export default function AdminDashboardPage() {
         cagCount: cag,
         ptcaCount: ptca,
         revenue,
-        referralCount: userRefs.length,
+        referralCount: userProcs.length,
       };
     });
     setRows(built);
 
-    // Top doctors today (by visit count)
     const docMap = new Map<string, number>();
     ((visitsRes.data as any[]) || [])
       .filter((v) => v.visitor_type === "doctor")
