@@ -8,22 +8,38 @@ import {
 interface Proc {
   id: string;
   user_id: string;
+  centre_id: string | null;
   doctor_name: string | null;
   procedure_status: "pending" | "done" | "not_done";
   payment_status: "pending" | "released";
   estimated_value: number | null;
+  procedure_date: string;
 }
 
 interface Profile { user_id: string; full_name: string }
 
-export default function ReferralAnalytics() {
+interface Props {
+  fromDate?: string;
+  toDate?: string;
+  centreId?: string;
+  userId?: string;
+}
+
+export default function ReferralAnalytics({ fromDate, toDate, centreId, userId }: Props = {}) {
   const [procs, setProcs] = useState<Proc[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
   useEffect(() => {
     const fetchAll = () => {
+      let q = supabase
+        .from("procedures")
+        .select("id, user_id, centre_id, doctor_name, procedure_status, payment_status, estimated_value, procedure_date");
+      if (fromDate) q = q.gte("procedure_date", fromDate);
+      if (toDate) q = q.lte("procedure_date", toDate);
+      if (centreId) q = q.eq("centre_id", centreId);
+      if (userId) q = q.eq("user_id", userId);
       void Promise.all([
-        supabase.from("procedures").select("id, user_id, doctor_name, procedure_status, payment_status, estimated_value"),
+        q,
         supabase.from("profiles").select("user_id, full_name"),
       ]).then(([p, pr]) => {
         setProcs(((p.data as any) || []) as Proc[]);
@@ -36,7 +52,7 @@ export default function ReferralAnalytics() {
       .on("postgres_changes", { event: "*", schema: "public", table: "procedures" }, fetchAll)
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
-  }, []);
+  }, [fromDate, toDate, centreId, userId]);
 
   const total = procs.length;
   const done = procs.filter((p) => p.procedure_status === "done").length;
