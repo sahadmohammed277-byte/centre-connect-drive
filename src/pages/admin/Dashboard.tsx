@@ -149,7 +149,7 @@ export default function AdminDashboardPage() {
   const totalPtca = scoped.reduce((a, r) => a + r.ptcaCount, 0);
   const totalRevenue = scoped.reduce((a, r) => a + r.revenue, 0);
   const totalAllowance = scoped.reduce((a, r) => {
-    const sum = calcSummary(r.checkin?.total_km ?? 0, r.doctorCount, settings);
+    const sum = calcSummary(r.checkin?.total_km ?? 0, r.visitCount, settings);
     return a + sum.total;
   }, 0);
 
