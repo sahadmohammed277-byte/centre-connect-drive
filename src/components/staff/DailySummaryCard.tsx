@@ -58,7 +58,7 @@ export default function DailySummaryCard({ checkin, refreshKey }: Props) {
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-muted-foreground text-xs">
-              <IndianRupee className="h-3 w-3" /> TA (₹4/km)
+              <IndianRupee className="h-3 w-3" /> TA (₹5/km)
             </div>
             <p className="text-xl font-bold">₹{summary.ta}</p>
           </div>
