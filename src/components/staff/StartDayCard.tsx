@@ -35,10 +35,36 @@ export default function StartDayCard() {
     const { lat, lng } = await tryGetPosition();
     const checkinLat = todayCheckin?.checkin_lat;
     const checkinLng = todayCheckin?.checkin_lng;
-    const km =
-      lat != null && lng != null && checkinLat != null && checkinLng != null
-        ? distanceKm(checkinLat, checkinLng, lat, lng)
-        : 0;
+
+    // Build waypoint path: start → each visit (in chronological order) → end.
+    let km = 0;
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: visits } = await supabase
+        .from("visits")
+        .select("visit_lat, visit_lng, checkin_time, created_at")
+        .eq("checkin_id", todayCheckin!.id)
+        .order("checkin_time", { ascending: true });
+      const path: { lat: number; lng: number }[] = [];
+      if (checkinLat != null && checkinLng != null) path.push({ lat: checkinLat, lng: checkinLng });
+      (visits || []).forEach((v: any) => {
+        if (v.visit_lat != null && v.visit_lng != null) path.push({ lat: v.visit_lat, lng: v.visit_lng });
+      });
+      if (lat != null && lng != null) path.push({ lat, lng });
+      for (let i = 1; i < path.length; i++) {
+        km += distanceKm(path[i - 1].lat, path[i - 1].lng, path[i].lat, path[i].lng);
+      }
+    } catch {
+      // Fallback: simple start→end distance
+      if (lat != null && lng != null && checkinLat != null && checkinLng != null) {
+        km = distanceKm(checkinLat, checkinLng, lat, lng);
+      }
+    }
+    // Validation: clamp to realistic daily limit.
+    if (km < 0) km = 0;
+    if (km > 300) km = 300;
+    km = Math.round(km * 10) / 10;
+
     const res = await endDay(lat, lng, km);
     if (res?.error) setError(res.error.message || "Failed to end day");
     setLoading(false);
