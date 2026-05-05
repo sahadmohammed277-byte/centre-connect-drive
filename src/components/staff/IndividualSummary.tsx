@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Activity, Stethoscope, HeartPulse, Car, IndianRupee, TrendingUp } from "lucide-react";
-import { calculateDailySummary, TA_RATE_PER_KM, DA_RATE_PER_KM, MIN_DOCTOR_VISITS_FOR_DA } from "@/lib/ta-da";
+import { calculateDailySummary, TA_RATE_PER_KM, DA_AMOUNT, MIN_VISITS_FOR_DA } from "@/lib/ta-da";
 
 interface Props { refreshKey?: number; }
 
@@ -67,9 +67,10 @@ export default function IndividualSummary({ refreshKey }: Props) {
       const cag = procs.filter((p) => p.procedure_type === "cag").length;
       const ptca = procs.filter((p) => p.procedure_type === "ptca").length;
 
-      const todaySum = calculateDailySummary(todayKm, doctorVisits);
+      // Today summary uses total visits (all types) for DA eligibility
+      const todaySum = calculateDailySummary(todayKm, todayVisits);
 
-      // Month TA/DA: needs per-day doctor visit count to know DA eligibility
+      // Month TA/DA: per-day total visit count drives flat DA
       const checkins = (monthCheckinsRes.data || []) as any[];
       let taMonth = 0;
       let daMonth = 0;
@@ -77,16 +78,16 @@ export default function IndividualSummary({ refreshKey }: Props) {
         const ids = checkins.map((x) => x.id);
         const { data: monthVisits } = await supabase
           .from("visits")
-          .select("checkin_id, visitor_type")
+          .select("checkin_id")
           .in("checkin_id", ids);
-        const docPerCheckin: Record<string, number> = {};
+        const visitsPerCheckin: Record<string, number> = {};
         (monthVisits || []).forEach((v: any) => {
-          if (v.visitor_type === "doctor") docPerCheckin[v.checkin_id] = (docPerCheckin[v.checkin_id] || 0) + 1;
+          visitsPerCheckin[v.checkin_id] = (visitsPerCheckin[v.checkin_id] || 0) + 1;
         });
         for (const ck of checkins) {
-          const km = Number(ck.total_km ?? 0);
+          const km = Math.max(0, Math.min(Number(ck.total_km ?? 0), 300));
           taMonth += km * TA_RATE_PER_KM;
-          if ((docPerCheckin[ck.id] || 0) >= MIN_DOCTOR_VISITS_FOR_DA) daMonth += km * DA_RATE_PER_KM;
+          if ((visitsPerCheckin[ck.id] || 0) >= MIN_VISITS_FOR_DA) daMonth += DA_AMOUNT;
         }
       }
 

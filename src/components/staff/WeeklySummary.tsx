@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Activity, Stethoscope, HeartPulse, IndianRupee, TrendingUp, Car } from "lucide-react";
-import { TA_RATE_PER_KM, DA_RATE_PER_KM, MIN_DOCTOR_VISITS_FOR_DA } from "@/lib/ta-da";
+import { TA_RATE_PER_KM, DA_AMOUNT, MIN_VISITS_FOR_DA } from "@/lib/ta-da";
 
 interface Stats {
   visits: number;
@@ -37,20 +37,19 @@ export default function WeeklySummary({ refreshKey }: { refreshKey?: number }) {
       ]);
 
       const visits = vRes.data || [];
-      const docPerCheckin: Record<string, number> = {};
+      const visitsPerCheckin: Record<string, number> = {};
       visits.forEach((v: any) => {
-        if (v.visitor_type === "doctor")
-          docPerCheckin[v.checkin_id] = (docPerCheckin[v.checkin_id] || 0) + 1;
+        visitsPerCheckin[v.checkin_id] = (visitsPerCheckin[v.checkin_id] || 0) + 1;
       });
 
       const ck = (ckRes.data || []) as any[];
       let km = 0;
       let earnings = 0;
       ck.forEach((c) => {
-        const k = Number(c.total_km ?? 0);
+        const k = Math.max(0, Math.min(Number(c.total_km ?? 0), 300));
         km += k;
         earnings += k * TA_RATE_PER_KM;
-        if ((docPerCheckin[c.id] || 0) >= MIN_DOCTOR_VISITS_FOR_DA) earnings += k * DA_RATE_PER_KM;
+        if ((visitsPerCheckin[c.id] || 0) >= MIN_VISITS_FOR_DA) earnings += DA_AMOUNT;
       });
 
       const procs = (pRes.data || []) as any[];

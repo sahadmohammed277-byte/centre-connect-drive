@@ -120,18 +120,26 @@ export default function ReportsPage() {
       row.total_km += ci.total_km ?? 0;
     });
 
-    const byUserDate: Record<string, number> = {};
+    // Per-day TOTAL visit count drives DA eligibility (flat amount per day)
+    const visitsByUserDate: Record<string, number> = {};
+    const docByUserDate: Record<string, number> = {};
     (vRes.data || []).forEach((v: any) => {
       ensure(v.user_id, v.centre_id);
-      if (v.visitor_type !== "doctor") return;
       const k = `${v.user_id}|${v.visit_date}`;
-      byUserDate[k] = (byUserDate[k] || 0) + 1;
+      visitsByUserDate[k] = (visitsByUserDate[k] || 0) + 1;
+      if (v.visitor_type === "doctor") docByUserDate[k] = (docByUserDate[k] || 0) + 1;
     });
-    Object.entries(byUserDate).forEach(([k, count]) => {
+    Object.entries(docByUserDate).forEach(([k, count]) => {
       const [uid] = k.split("|");
       const row = ensure(uid, null);
       row.doctor_visits += count;
-      if (count >= settings.min_doctor_visits_for_da) row.da_eligible_days += 1;
+    });
+    Object.entries(visitsByUserDate).forEach(([k, count]) => {
+      if (count >= settings.min_doctor_visits_for_da) {
+        const [uid] = k.split("|");
+        const row = ensure(uid, null);
+        row.da_eligible_days += 1;
+      }
     });
 
     // Referrals = total procedure records; CAG/PTCA = only DONE procedures
@@ -152,21 +160,11 @@ export default function ReportsPage() {
       }
     });
 
-    // DA per-day from checkins
-    const checkinsByUserDate: Record<string, number> = {};
-    (cRes.data || []).forEach((ci: any) => {
-      checkinsByUserDate[`${ci.user_id}|${ci.checkin_date}`] = ci.total_km ?? 0;
-    });
-    Object.entries(byUserDate).forEach(([k, count]) => {
-      if (count >= settings.min_doctor_visits_for_da) {
-        const km = checkinsByUserDate[k] || 0;
-        const [uid] = k.split("|");
-        map[uid].total_da += km * settings.da_rate_per_km;
-      }
-    });
-
+    // DA flat per eligible day
     Object.values(map).forEach((r) => {
-      r.total_ta = r.total_km * settings.ta_rate_per_km;
+      r.total_da = r.da_eligible_days * settings.da_rate_per_km;
+      const km = Math.max(0, Math.min(r.total_km, settings.max_daily_km || 300));
+      r.total_ta = Math.round(km * settings.ta_rate_per_km);
       r.grand_total = r.total_ta + r.total_da + r.revenue;
     });
 

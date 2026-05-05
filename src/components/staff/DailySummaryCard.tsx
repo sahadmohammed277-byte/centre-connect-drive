@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DailyCheckin } from "@/hooks/useCheckin";
-import { calculateDailySummary, MIN_DOCTOR_VISITS_FOR_DA } from "@/lib/ta-da";
+import { calculateDailySummary, MIN_VISITS_FOR_DA } from "@/lib/ta-da";
 import { IndianRupee, Car, Stethoscope } from "lucide-react";
 
 interface Props {
@@ -32,7 +32,7 @@ export default function DailySummaryCard({ checkin, refreshKey }: Props) {
     fetch();
   }, [checkin.id, user, refreshKey]);
 
-  const summary = calculateDailySummary(checkin.total_km ?? 0, doctorCount);
+  const summary = calculateDailySummary(checkin.total_km ?? 0, totalVisits);
 
   return (
     <Card>
@@ -58,19 +58,19 @@ export default function DailySummaryCard({ checkin, refreshKey }: Props) {
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-muted-foreground text-xs">
-              <IndianRupee className="h-3 w-3" /> TA (₹4/km)
+              <IndianRupee className="h-3 w-3" /> TA (₹5/km)
             </div>
             <p className="text-xl font-bold">₹{summary.ta}</p>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-muted-foreground text-xs">
-              <IndianRupee className="h-3 w-3" /> DA (₹150/km)
+              <IndianRupee className="h-3 w-3" /> DA (flat ₹150)
             </div>
             <div className="flex items-center gap-2">
               <p className="text-xl font-bold">₹{summary.da}</p>
               {!summary.daEligible && (
                 <Badge variant="secondary" className="text-xs">
-                  Need {MIN_DOCTOR_VISITS_FOR_DA - doctorCount} more Dr visits
+                  Need {MIN_VISITS_FOR_DA - totalVisits} more visits
                 </Badge>
               )}
             </div>

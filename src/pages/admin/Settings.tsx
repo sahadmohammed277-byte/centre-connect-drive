@@ -69,6 +69,7 @@ export default function SettingsPage() {
         updateSetting("da_rate_per_km", Number(s.da_rate_per_km)),
         updateSetting("ta_rate_per_km", Number(s.ta_rate_per_km)),
         updateSetting("min_doctor_visits_for_da", Number(s.min_doctor_visits_for_da)),
+        updateSetting("max_daily_km", Number(s.max_daily_km)),
         updateSetting("manual_km_entry_enabled", !!s.manual_km_entry_enabled),
         updateSetting("notifications_enabled", !!s.notifications_enabled),
       ]);
@@ -89,22 +90,28 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>DA Rate (₹ / KM)</Label>
+              <Label>DA Amount (₹ flat / day)</Label>
               <Input type="number" min={0} value={s.da_rate_per_km}
                 onChange={(e) => setS({ ...s, da_rate_per_km: Number(e.target.value) })} />
-              <p className="text-xs text-muted-foreground">Default ₹150</p>
+              <p className="text-xs text-muted-foreground">Default ₹150 (paid when visit threshold met)</p>
             </div>
             <div className="space-y-2">
               <Label>TA Rate (₹ / KM)</Label>
               <Input type="number" min={0} value={s.ta_rate_per_km}
                 onChange={(e) => setS({ ...s, ta_rate_per_km: Number(e.target.value) })} />
-              <p className="text-xs text-muted-foreground">Default ₹4</p>
+              <p className="text-xs text-muted-foreground">Default ₹5</p>
             </div>
             <div className="space-y-2">
-              <Label>Min Doctor Visits for DA</Label>
+              <Label>DA Visit Threshold</Label>
               <Input type="number" min={0} value={s.min_doctor_visits_for_da}
                 onChange={(e) => setS({ ...s, min_doctor_visits_for_da: Number(e.target.value) })} />
-              <p className="text-xs text-muted-foreground">Default 5</p>
+              <p className="text-xs text-muted-foreground">Default 5 total visits/day</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Max Daily KM</Label>
+              <Input type="number" min={0} value={s.max_daily_km}
+                onChange={(e) => setS({ ...s, max_daily_km: Number(e.target.value) })} />
+              <p className="text-xs text-muted-foreground">Default 300 (validation cap)</p>
             </div>
           </div>
         </CardContent>
