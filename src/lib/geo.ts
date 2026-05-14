@@ -16,12 +16,16 @@ function toRad(deg: number) {
   return (deg * Math.PI) / 180;
 }
 
-/** Distance in KM (rounded to 1 decimal) */
+/** Distance in KM (rounded to 2 decimals) */
 export function distanceKm(
   lat1: number, lng1: number,
   lat2: number, lng2: number
 ): number {
-  return Math.round(distanceMeters(lat1, lng1, lat2, lng2) / 100) / 10;
+  if (
+    lat1 == null || lng1 == null || lat2 == null || lng2 == null ||
+    Number.isNaN(lat1) || Number.isNaN(lng1) || Number.isNaN(lat2) || Number.isNaN(lng2)
+  ) return 0;
+  return Math.round(distanceMeters(lat1, lng1, lat2, lng2) / 10) / 100;
 }
 
 /** Get current GPS position as a Promise */

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,12 +45,22 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
     setGpsError("");
     try {
       const pos = await getCurrentPosition();
+      console.log("[KM] Visit GPS captured:", pos.coords.latitude, pos.coords.longitude);
       setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
     } catch (err: any) {
+      console.warn("[KM] Visit GPS failed:", err);
       setGpsError(err.message || "Failed to capture GPS location.");
     }
     setGpsLoading(false);
   };
+
+  // Auto-capture GPS when the dialog opens so each visit becomes a real waypoint.
+  useEffect(() => {
+    if (open && !coords && !gpsLoading) {
+      captureLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
