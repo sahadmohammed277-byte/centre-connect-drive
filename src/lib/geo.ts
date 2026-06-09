@@ -28,17 +28,31 @@ export function distanceKm(
   return Math.round(distanceMeters(lat1, lng1, lat2, lng2) / 10) / 100;
 }
 
-/** Get current GPS position as a Promise */
+/** Get current GPS position as a Promise. Tries high-accuracy first, falls back to low-accuracy + cached. */
 export function getCurrentPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation not supported"));
+    if (!("geolocation" in navigator)) {
+      reject(new Error("Geolocation not supported by this browser."));
       return;
     }
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,
-    });
+    const friendly = (err: GeolocationPositionError) => {
+      if (err.code === 1) return new Error("Location permission denied. Please allow location access in your browser settings.");
+      if (err.code === 2) return new Error("Location unavailable. Check your GPS / network connection.");
+      if (err.code === 3) return new Error("Location request timed out. Move to an open area and try again.");
+      return new Error(err.message || "Failed to get location.");
+    };
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      // High-accuracy failed → try a faster, lower-accuracy attempt with cache.
+      (firstErr) => {
+        console.warn("[geo] high-accuracy failed, falling back:", firstErr);
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          (err) => reject(friendly(err)),
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   });
 }
