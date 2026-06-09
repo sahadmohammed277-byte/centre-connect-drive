@@ -30,11 +30,13 @@ export default function StartDayCard() {
   const tryGetPosition = async (): Promise<{ lat: number | null; lng: number | null }> => {
     try {
       const pos = await getCurrentPosition();
-      console.log("[KM] GPS captured:", pos.coords.latitude, pos.coords.longitude);
+      console.log("[KM] GPS captured:", pos.coords.latitude, pos.coords.longitude, "accuracy:", pos.coords.accuracy, "m");
+      setGpsDenied(false);
       return { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    } catch (err) {
+    } catch (err: any) {
       console.warn("[KM] GPS capture failed:", err);
       setGpsDenied(true);
+      setError(err?.message || "Location unavailable. Open the app in a new browser tab and allow location access.");
       return { lat: null, lng: null };
     }
   };
