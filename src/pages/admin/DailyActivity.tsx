@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
-import { Eye, Calendar as CalendarIcon } from "lucide-react";
+import { Eye, Calendar as CalendarIcon, Download } from "lucide-react";
 
 function todayISO() {
   return new Date().toISOString().split("T")[0];
