@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
-import { Eye, Calendar as CalendarIcon } from "lucide-react";
+import { Eye, Calendar as CalendarIcon, Download } from "lucide-react";
 
 function todayISO() {
   return new Date().toISOString().split("T")[0];
@@ -131,6 +131,38 @@ export default function DailyActivityPage() {
       return p?.full_name?.toLowerCase().includes(search.toLowerCase());
     });
 
+  function handleDownload() {
+    const headers = ["Date", "Staff", "Centre", "Visits", "Doctors", "KM", "Check-in", "Check-out", "Status"];
+    const lines = filtered.map((r) => {
+      const p = profiles.find((x) => x.user_id === r.user_id);
+      const c = centres.find((x) => x.id === r.centre_id);
+      const checkin = r.checkin_time ? new Date(r.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      const checkout = r.checkout_time ? new Date(r.checkout_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      const status = r.checkout_time ? "Completed" : "Active";
+      return [
+        `"${r.checkin_date}"`,
+        `"${(p?.full_name || "").replace(/"/g, '""')}"`,
+        `"${(c?.name || "").replace(/"/g, '""')}"`,
+        r.visit_count,
+        r.doctor_count,
+        (r.total_km ?? 0).toFixed(1),
+        `"${checkin}"`,
+        `"${checkout}"`,
+        `"${status}"`,
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `daily-activity-${fromDate}-to-${toDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <DataTableShell
@@ -139,6 +171,12 @@ export default function DailyActivityPage() {
         searchPlaceholder="Search staff…"
         isEmpty={!loading && filtered.length === 0}
         emptyMessage="No activity in this date range."
+        actions={
+          <Button size="sm" variant="outline" onClick={handleDownload}>
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </Button>
+        }
         filters={
           <div className="flex flex-wrap items-end gap-2">
             <div className="flex flex-col gap-1">
