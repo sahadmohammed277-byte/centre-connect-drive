@@ -238,10 +238,7 @@ export default function ReferralsPage() {
                 <Input
                   type="date"
                   value={fromDate}
-                  onChange={(e) => {
-                    setFromDate(e.target.value);
-                    setDatePreset(detectPreset(e.target.value, toDate));
-                  }}
+                  onChange={(e) => setFromDate(e.target.value)}
                   className="w-[160px] pl-9"
                 />
               </div>
@@ -254,10 +251,7 @@ export default function ReferralsPage() {
                   type="date"
                   value={toDate}
                   min={fromDate}
-                  onChange={(e) => {
-                    setToDate(e.target.value);
-                    setDatePreset(detectPreset(fromDate, e.target.value));
-                  }}
+                  onChange={(e) => setToDate(e.target.value)}
                   className="w-[160px] pl-9"
                 />
               </div>
