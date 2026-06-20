@@ -236,22 +236,48 @@ export default function ReferralsPage() {
               <Label className="text-xs text-muted-foreground">From Date</Label>
               <div className="relative">
                 <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-                  className="w-[160px] pl-9" />
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setDatePreset(detectPreset(e.target.value, toDate));
+                  }}
+                  className="w-[160px] pl-9"
+                />
               </div>
             </div>
             <div className="flex flex-col gap-1">
               <Label className="text-xs text-muted-foreground">To Date</Label>
               <div className="relative">
                 <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input type="date" value={toDate} min={fromDate} onChange={(e) => setToDate(e.target.value)}
-                  className="w-[160px] pl-9" />
+                <Input
+                  type="date"
+                  value={toDate}
+                  min={fromDate}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setDatePreset(detectPreset(fromDate, e.target.value));
+                  }}
+                  className="w-[160px] pl-9"
+                />
               </div>
             </div>
-            <div className="flex gap-1">
-              <Button size="sm" variant={activeQuick === "today" ? "default" : "outline"} onClick={() => applyQuick("today")}>Today</Button>
-              <Button size="sm" variant={activeQuick === "week" ? "default" : "outline"} onClick={() => applyQuick("week")}>Week</Button>
-              <Button size="sm" variant={activeQuick === "month" ? "default" : "outline"} onClick={() => applyQuick("month")}>Month</Button>
+            <div className="flex flex-wrap items-end gap-1">
+              {DATE_RANGE_PRESETS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={activePreset === value ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    if (value === "custom") return;
+                    applyPreset(value);
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
             <Select value={centreFilter} onValueChange={setCentreFilter}>
               <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
