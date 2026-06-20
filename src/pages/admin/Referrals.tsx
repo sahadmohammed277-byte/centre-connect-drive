@@ -42,7 +42,7 @@ function csvCell(v: any) {
 export default function ReferralsPage() {
   const [fromDate, setFromDate] = useState(todayISO());
   const [toDate, setToDate] = useState(todayISO());
-  const [datePreset, setDatePreset] = useState(detectPreset(fromDate, toDate));
+  
   const [centreFilter, setCentreFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
