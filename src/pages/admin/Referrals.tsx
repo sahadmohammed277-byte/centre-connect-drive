@@ -93,19 +93,14 @@ export default function ReferralsPage() {
     setLoading(false);
   }
 
-  function applyQuick(range: "today" | "week" | "month") {
-    const now = new Date();
-    if (range === "today") {
-      const t = toISO(now); setFromDate(t); setToDate(t);
-    } else if (range === "week") {
-      const d = new Date(now);
-      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-      setFromDate(toISO(d)); setToDate(toISO(now));
-    } else {
-      const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFromDate(toISO(first)); setToDate(toISO(now));
-    }
+  function applyPreset(preset: Exclude<typeof datePreset, "custom">) {
+    setDatePreset(preset);
+    const { from: f, to: t } = getPresetDates(preset);
+    setFromDate(f);
+    setToDate(t);
   }
+
+  const activePreset = useMemo(() => detectPreset(fromDate, toDate), [fromDate, toDate]);
 
   const filtered = useMemo(() => {
     return rows
