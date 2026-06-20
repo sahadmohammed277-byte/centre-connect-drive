@@ -34,8 +34,6 @@ type Proc = {
 
 const PAGE_SIZE = 15;
 
-function todayISO() { return new Date().toISOString().split("T")[0]; }
-function toISO(d: Date) { return d.toISOString().split("T")[0]; }
 function csvCell(v: any) {
   const s = v == null ? "" : String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
