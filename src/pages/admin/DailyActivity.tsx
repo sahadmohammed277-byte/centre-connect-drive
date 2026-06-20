@@ -159,7 +159,10 @@ export default function DailyActivityPage() {
                   type="date"
                   value={fromDate}
                   placeholder="From Date"
-                  onChange={(e) => setFromDate(e.target.value)}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setDatePreset(detectPreset(e.target.value, toDate));
+                  }}
                   className="w-[170px] pl-9"
                 />
               </div>
@@ -173,27 +176,29 @@ export default function DailyActivityPage() {
                   value={toDate}
                   placeholder="To Date"
                   min={fromDate}
-                  onChange={(e) => setToDate(e.target.value)}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setDatePreset(detectPreset(fromDate, e.target.value));
+                  }}
                   className="w-[170px] pl-9"
                 />
               </div>
             </div>
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant={activeQuick === "today" ? "default" : "outline"}
-                onClick={() => applyQuick("today")}
-              >Today</Button>
-              <Button
-                size="sm"
-                variant={activeQuick === "week" ? "default" : "outline"}
-                onClick={() => applyQuick("week")}
-              >This Week</Button>
-              <Button
-                size="sm"
-                variant={activeQuick === "month" ? "default" : "outline"}
-                onClick={() => applyQuick("month")}
-              >This Month</Button>
+            <div className="flex flex-wrap items-end gap-1">
+              {DATE_RANGE_PRESETS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={activePreset === value ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    if (value === "custom") return;
+                    applyPreset(value);
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
             <Select value={centreFilter} onValueChange={setCentreFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
