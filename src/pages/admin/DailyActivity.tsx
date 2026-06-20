@@ -156,10 +156,7 @@ export default function DailyActivityPage() {
                   type="date"
                   value={fromDate}
                   placeholder="From Date"
-                  onChange={(e) => {
-                    setFromDate(e.target.value);
-                    setDatePreset(detectPreset(e.target.value, toDate));
-                  }}
+                  onChange={(e) => setFromDate(e.target.value)}
                   className="w-[170px] pl-9"
                 />
               </div>
@@ -173,10 +170,7 @@ export default function DailyActivityPage() {
                   value={toDate}
                   placeholder="To Date"
                   min={fromDate}
-                  onChange={(e) => {
-                    setToDate(e.target.value);
-                    setDatePreset(detectPreset(fromDate, e.target.value));
-                  }}
+                  onChange={(e) => setToDate(e.target.value)}
                   className="w-[170px] pl-9"
                 />
               </div>
