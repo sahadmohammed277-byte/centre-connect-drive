@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
 import { Eye, Calendar as CalendarIcon, Download } from "lucide-react";
-import { DATE_RANGE_PRESETS, getPresetDates, detectPreset } from "@/lib/date-range";
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
 export default function DailyActivityPage() {
   const [fromDate, setFromDate] = useState(todayISO());
