@@ -150,15 +150,6 @@ export default function ReferralsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const activeQuick = useMemo(() => {
-    const now = new Date(); const t = toISO(now);
-    if (fromDate === t && toDate === t) return "today";
-    const d = new Date(now); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    if (fromDate === toISO(d) && toDate === t) return "week";
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    if (fromDate === toISO(first) && toDate === t) return "month";
-    return "";
-  }, [fromDate, toDate]);
 
   function exportCSV() {
     const headers = ["Staff", "Centre", "Doctor", "Patient", "Type", "Date", "Procedure Status", "Not Done Reason", "Payment Status", "Value"];
