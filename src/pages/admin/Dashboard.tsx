@@ -42,6 +42,36 @@ export default function AdminDashboardPage() {
   const [topDoctors, setTopDoctors] = useState<{ name: string; count: number }[]>([]);
   const [fromDate, setFromDate] = useState<string>(todayStr());
   const [toDate, setToDate] = useState<string>(todayStr());
+  const [datePreset, setDatePreset] = useState<"today" | "yesterday" | "last7" | "custom">("today");
+
+  const applyPreset = (preset: typeof datePreset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    const iso = (d: Date) => d.toISOString().split("T")[0];
+    switch (preset) {
+      case "today":
+        setFromDate(iso(today));
+        setToDate(iso(today));
+        break;
+      case "yesterday": {
+        const y = new Date(today);
+        y.setDate(y.getDate() - 1);
+        const s = iso(y);
+        setFromDate(s);
+        setToDate(s);
+        break;
+      }
+      case "last7": {
+        const start = new Date(today);
+        start.setDate(start.getDate() - 6);
+        setFromDate(iso(start));
+        setToDate(iso(today));
+        break;
+      }
+      default:
+        break;
+    }
+  };
 
   useEffect(() => {
     void load();
@@ -179,12 +209,31 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const datePresets = [
+    { value: "today" as const, label: "Today" },
+    { value: "yesterday" as const, label: "Yesterday" },
+    { value: "last7" as const, label: "Last 7 Days" },
+    { value: "custom" as const, label: "Custom" },
+  ];
+
+  const overviewTitle = (() => {
+    if (fromDate === toDate) {
+      const d = new Date(fromDate);
+      if (fromDate === todayStr()) return "Today's Overview";
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      if (fromDate === y.toISOString().split("T")[0]) return "Yesterday's Overview";
+      return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    }
+    return "Overview";
+  })();
+
   return (
     <div className="space-y-8">
       {/* Page heading */}
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Today's Overview</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{overviewTitle}</h2>
           <p className="text-sm text-muted-foreground">
             {fromDate === toDate
               ? new Date(fromDate).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
@@ -196,54 +245,84 @@ export default function AdminDashboardPage() {
         </Badge>
       </div>
 
-      {/* Filters: date range + centre + staff */}
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">From</Label>
-          <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9 w-[160px]" />
+      {/* Filters: quick presets + date range + centre + staff */}
+      <div className="flex flex-col gap-4 rounded-lg border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Date range:</span>
+          {datePresets.map(({ value, label }) => (
+            <Button
+              key={value}
+              variant={datePreset === value ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => applyPreset(value)}
+            >
+              {label}
+            </Button>
+          ))}
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">To</Label>
-          <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9 w-[160px]" />
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">From</Label>
+            <Input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setDatePreset("custom");
+              }}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">To</Label>
+            <Input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setDatePreset("custom");
+              }}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Centre</Label>
+            <Select value={centreFilter} onValueChange={setCentreFilter}>
+              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Centres</SelectItem>
+                {centres.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Staff</Label>
+            <Select value={staffFilter} onValueChange={setStaffFilter}>
+              <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Staff</SelectItem>
+                {rows.map((r) => (
+                  <SelectItem key={r.profile.user_id} value={r.profile.user_id}>{r.profile.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => {
+              applyPreset("today");
+              setCentreFilter("all");
+              setStaffFilter("all");
+            }}
+          >
+            Reset
+          </Button>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Centre</Label>
-          <Select value={centreFilter} onValueChange={setCentreFilter}>
-            <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Centres</SelectItem>
-              {centres.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Staff</Label>
-          <Select value={staffFilter} onValueChange={setStaffFilter}>
-            <SelectTrigger className="h-9 w-[200px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Staff</SelectItem>
-              {rows.map((r) => (
-                <SelectItem key={r.profile.user_id} value={r.profile.user_id}>{r.profile.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          onClick={() => {
-            const t = todayStr();
-            setFromDate(t);
-            setToDate(t);
-            setCentreFilter("all");
-            setStaffFilter("all");
-          }}
-        >
-          Reset
-        </Button>
       </div>
 
       {/* Activity section */}
