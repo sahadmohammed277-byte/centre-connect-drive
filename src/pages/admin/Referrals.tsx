@@ -93,8 +93,7 @@ export default function ReferralsPage() {
     setLoading(false);
   }
 
-  function applyPreset(preset: Exclude<typeof datePreset, "custom">) {
-    setDatePreset(preset);
+  function applyPreset(preset: Exclude<ReturnType<typeof detectPreset>, "custom">) {
     const { from: f, to: t } = getPresetDates(preset);
     setFromDate(f);
     setToDate(t);
