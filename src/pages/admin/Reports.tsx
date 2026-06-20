@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { fetchSettings, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
 type StaffRow = {
   user_id: string;
@@ -32,10 +33,9 @@ type StaffRow = {
 };
 
 export default function ReportsPage() {
-  const today = new Date();
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-  const [from, setFrom] = useState(firstOfMonth);
-  const [to, setTo] = useState(today.toISOString().split("T")[0]);
+  const [from, setFrom] = useState(todayISO());
+  const [to, setTo] = useState(todayISO());
+  const [datePreset, setDatePreset] = useState(detectPreset(from, to));
   const [centreFilter, setCentreFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
   const [centres, setCentres] = useState<any[]>([]);
@@ -285,38 +285,77 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardContent className="p-4 flex flex-wrap items-end gap-3">
-          <div>
-            <Label className="text-xs">From</Label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[160px]" />
+        <CardContent className="p-4 flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Date range:</span>
+            {DATE_RANGE_PRESETS.map(({ value, label }) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={datePreset === value ? "default" : "outline"}
+                className="h-8 text-xs"
+                onClick={() => {
+                  setDatePreset(value);
+                  if (value !== "custom") {
+                    const { from: f, to: t } = getPresetDates(value);
+                    setFrom(f);
+                    setTo(t);
+                  }
+                }}
+              >
+                {label}
+              </Button>
+            ))}
           </div>
-          <div>
-            <Label className="text-xs">To</Label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[160px]" />
-          </div>
-          <div>
-            <Label className="text-xs">Centre</Label>
-            <Select value={centreFilter} onValueChange={setCentreFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Centres</SelectItem>
-                {centres.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Staff</Label>
-            <Select value={staffFilter} onValueChange={setStaffFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Staff</SelectItem>
-                {profiles.map((p) => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" onClick={downloadCSV}><FileSpreadsheet className="h-4 w-4 mr-2" />Excel/CSV</Button>
-            <Button onClick={downloadPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-xs">From</Label>
+              <Input
+                type="date"
+                value={from}
+                onChange={(e) => {
+                  setFrom(e.target.value);
+                  setDatePreset(detectPreset(e.target.value, to));
+                }}
+                className="w-[160px]"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">To</Label>
+              <Input
+                type="date"
+                value={to}
+                onChange={(e) => {
+                  setTo(e.target.value);
+                  setDatePreset(detectPreset(from, e.target.value));
+                }}
+                className="w-[160px]"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Centre</Label>
+              <Select value={centreFilter} onValueChange={setCentreFilter}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Centres</SelectItem>
+                  {centres.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Staff</Label>
+              <Select value={staffFilter} onValueChange={setStaffFilter}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Staff</SelectItem>
+                  {profiles.map((p) => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" onClick={downloadCSV}><FileSpreadsheet className="h-4 w-4 mr-2" />Excel/CSV</Button>
+              <Button onClick={downloadPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
+            </div>
           </div>
         </CardContent>
       </Card>

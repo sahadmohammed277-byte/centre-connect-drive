@@ -16,6 +16,7 @@ import {
   Calendar as CalendarIcon, HeartHandshake, CheckCircle2, XCircle, Percent,
   Stethoscope, AlertTriangle, FileSpreadsheet, FileText, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
 type Proc = {
   id: string;
@@ -33,18 +34,15 @@ type Proc = {
 
 const PAGE_SIZE = 15;
 
-function todayISO() { return new Date().toISOString().split("T")[0]; }
-function toISO(d: Date) { return d.toISOString().split("T")[0]; }
 function csvCell(v: any) {
   const s = v == null ? "" : String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 export default function ReferralsPage() {
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 30); return toISO(d);
-  });
+  const [fromDate, setFromDate] = useState(todayISO());
   const [toDate, setToDate] = useState(todayISO());
+  
   const [centreFilter, setCentreFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -95,19 +93,13 @@ export default function ReferralsPage() {
     setLoading(false);
   }
 
-  function applyQuick(range: "today" | "week" | "month") {
-    const now = new Date();
-    if (range === "today") {
-      const t = toISO(now); setFromDate(t); setToDate(t);
-    } else if (range === "week") {
-      const d = new Date(now);
-      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-      setFromDate(toISO(d)); setToDate(toISO(now));
-    } else {
-      const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFromDate(toISO(first)); setToDate(toISO(now));
-    }
+  function applyPreset(preset: Exclude<ReturnType<typeof detectPreset>, "custom">) {
+    const { from: f, to: t } = getPresetDates(preset);
+    setFromDate(f);
+    setToDate(t);
   }
+
+  const activePreset = useMemo(() => detectPreset(fromDate, toDate), [fromDate, toDate]);
 
   const filtered = useMemo(() => {
     return rows
@@ -157,15 +149,6 @@ export default function ReferralsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const activeQuick = useMemo(() => {
-    const now = new Date(); const t = toISO(now);
-    if (fromDate === t && toDate === t) return "today";
-    const d = new Date(now); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    if (fromDate === toISO(d) && toDate === t) return "week";
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    if (fromDate === toISO(first) && toDate === t) return "month";
-    return "";
-  }, [fromDate, toDate]);
 
   function exportCSV() {
     const headers = ["Staff", "Centre", "Doctor", "Patient", "Type", "Date", "Procedure Status", "Not Done Reason", "Payment Status", "Value"];
@@ -252,22 +235,42 @@ export default function ReferralsPage() {
               <Label className="text-xs text-muted-foreground">From Date</Label>
               <div className="relative">
                 <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-                  className="w-[160px] pl-9" />
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-[160px] pl-9"
+                />
               </div>
             </div>
             <div className="flex flex-col gap-1">
               <Label className="text-xs text-muted-foreground">To Date</Label>
               <div className="relative">
                 <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input type="date" value={toDate} min={fromDate} onChange={(e) => setToDate(e.target.value)}
-                  className="w-[160px] pl-9" />
+                <Input
+                  type="date"
+                  value={toDate}
+                  min={fromDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-[160px] pl-9"
+                />
               </div>
             </div>
-            <div className="flex gap-1">
-              <Button size="sm" variant={activeQuick === "today" ? "default" : "outline"} onClick={() => applyQuick("today")}>Today</Button>
-              <Button size="sm" variant={activeQuick === "week" ? "default" : "outline"} onClick={() => applyQuick("week")}>Week</Button>
-              <Button size="sm" variant={activeQuick === "month" ? "default" : "outline"} onClick={() => applyQuick("month")}>Month</Button>
+            <div className="flex flex-wrap items-end gap-1">
+              {DATE_RANGE_PRESETS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={activePreset === value ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    if (value === "custom") return;
+                    applyPreset(value);
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
             <Select value={centreFilter} onValueChange={setCentreFilter}>
               <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>

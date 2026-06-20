@@ -15,13 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
 import { Eye, Calendar as CalendarIcon, Download } from "lucide-react";
-
-function todayISO() {
-  return new Date().toISOString().split("T")[0];
-}
-function toISO(d: Date) {
-  return d.toISOString().split("T")[0];
-}
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
 export default function DailyActivityPage() {
   const [fromDate, setFromDate] = useState(todayISO());
@@ -89,38 +83,13 @@ export default function DailyActivityPage() {
     setDetailReferrals(r.data || []);
   }
 
-  function applyQuick(range: "today" | "week" | "month") {
-    const now = new Date();
-    if (range === "today") {
-      const t = toISO(now);
-      setFromDate(t); setToDate(t);
-    } else if (range === "week") {
-      const d = new Date(now);
-      const day = d.getDay(); // 0 Sun
-      const diffToMon = (day + 6) % 7;
-      d.setDate(d.getDate() - diffToMon);
-      setFromDate(toISO(d));
-      setToDate(toISO(now));
-    } else {
-      const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFromDate(toISO(first));
-      setToDate(toISO(now));
-    }
+  function applyPreset(preset: Exclude<ReturnType<typeof detectPreset>, "custom">) {
+    const { from: f, to: t } = getPresetDates(preset);
+    setFromDate(f);
+    setToDate(t);
   }
 
-  const activeQuick = useMemo(() => {
-    const now = new Date();
-    const t = toISO(now);
-    if (fromDate === t && toDate === t) return "today";
-    const d = new Date(now);
-    const day = d.getDay();
-    const diffToMon = (day + 6) % 7;
-    d.setDate(d.getDate() - diffToMon);
-    if (fromDate === toISO(d) && toDate === t) return "week";
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    if (fromDate === toISO(first) && toDate === t) return "month";
-    return "";
-  }, [fromDate, toDate]);
+  const activePreset = useMemo(() => detectPreset(fromDate, toDate), [fromDate, toDate]);
 
   const filtered = rows
     .filter((r) => centreFilter === "all" || r.centre_id === centreFilter)
@@ -206,22 +175,21 @@ export default function DailyActivityPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant={activeQuick === "today" ? "default" : "outline"}
-                onClick={() => applyQuick("today")}
-              >Today</Button>
-              <Button
-                size="sm"
-                variant={activeQuick === "week" ? "default" : "outline"}
-                onClick={() => applyQuick("week")}
-              >This Week</Button>
-              <Button
-                size="sm"
-                variant={activeQuick === "month" ? "default" : "outline"}
-                onClick={() => applyQuick("month")}
-              >This Month</Button>
+            <div className="flex flex-wrap items-end gap-1">
+              {DATE_RANGE_PRESETS.map(({ value, label }) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={activePreset === value ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    if (value === "custom") return;
+                    applyPreset(value);
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
             <Select value={centreFilter} onValueChange={setCentreFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
