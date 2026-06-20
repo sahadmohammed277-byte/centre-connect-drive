@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { fetchSettings, AppSettings, DEFAULT_SETTINGS } from "@/lib/settings";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
 type StaffRow = {
   user_id: string;
@@ -32,10 +33,9 @@ type StaffRow = {
 };
 
 export default function ReportsPage() {
-  const today = new Date();
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-  const [from, setFrom] = useState(firstOfMonth);
-  const [to, setTo] = useState(today.toISOString().split("T")[0]);
+  const [from, setFrom] = useState(todayISO());
+  const [to, setTo] = useState(todayISO());
+  const [datePreset, setDatePreset] = useState(detectPreset(from, to));
   const [centreFilter, setCentreFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
   const [centres, setCentres] = useState<any[]>([]);
