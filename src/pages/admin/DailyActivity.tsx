@@ -83,10 +83,7 @@ export default function DailyActivityPage() {
     setDetailReferrals(r.data || []);
   }
 
-  const [datePreset, setDatePreset] = useState(detectPreset(fromDate, toDate));
-
-  function applyPreset(preset: Exclude<typeof datePreset, "custom">) {
-    setDatePreset(preset);
+  function applyPreset(preset: Exclude<ReturnType<typeof detectPreset>, "custom">) {
     const { from: f, to: t } = getPresetDates(preset);
     setFromDate(f);
     setToDate(t);
