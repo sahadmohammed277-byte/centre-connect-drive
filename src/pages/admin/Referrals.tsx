@@ -16,6 +16,7 @@ import {
   Calendar as CalendarIcon, HeartHandshake, CheckCircle2, XCircle, Percent,
   Stethoscope, AlertTriangle, FileSpreadsheet, FileText, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
 type Proc = {
   id: string;
