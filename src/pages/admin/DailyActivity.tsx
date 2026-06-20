@@ -83,38 +83,16 @@ export default function DailyActivityPage() {
     setDetailReferrals(r.data || []);
   }
 
-  function applyQuick(range: "today" | "week" | "month") {
-    const now = new Date();
-    if (range === "today") {
-      const t = toISO(now);
-      setFromDate(t); setToDate(t);
-    } else if (range === "week") {
-      const d = new Date(now);
-      const day = d.getDay(); // 0 Sun
-      const diffToMon = (day + 6) % 7;
-      d.setDate(d.getDate() - diffToMon);
-      setFromDate(toISO(d));
-      setToDate(toISO(now));
-    } else {
-      const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFromDate(toISO(first));
-      setToDate(toISO(now));
-    }
+  const [datePreset, setDatePreset] = useState(detectPreset(fromDate, toDate));
+
+  function applyPreset(preset: Exclude<typeof datePreset, "custom">) {
+    setDatePreset(preset);
+    const { from: f, to: t } = getPresetDates(preset);
+    setFromDate(f);
+    setToDate(t);
   }
 
-  const activeQuick = useMemo(() => {
-    const now = new Date();
-    const t = toISO(now);
-    if (fromDate === t && toDate === t) return "today";
-    const d = new Date(now);
-    const day = d.getDay();
-    const diffToMon = (day + 6) % 7;
-    d.setDate(d.getDate() - diffToMon);
-    if (fromDate === toISO(d) && toDate === t) return "week";
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    if (fromDate === toISO(first) && toDate === t) return "month";
-    return "";
-  }, [fromDate, toDate]);
+  const activePreset = useMemo(() => detectPreset(fromDate, toDate), [fromDate, toDate]);
 
   const filtered = rows
     .filter((r) => centreFilter === "all" || r.centre_id === centreFilter)
