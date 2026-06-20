@@ -15,13 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { DataTableShell } from "@/components/admin/DataTableShell";
 import { Eye, Calendar as CalendarIcon, Download } from "lucide-react";
-
-function todayISO() {
-  return new Date().toISOString().split("T")[0];
-}
-function toISO(d: Date) {
-  return d.toISOString().split("T")[0];
-}
+import { DATE_RANGE_PRESETS, getPresetDates, detectPreset } from "@/lib/date-range";
 
 export default function DailyActivityPage() {
   const [fromDate, setFromDate] = useState(todayISO());
