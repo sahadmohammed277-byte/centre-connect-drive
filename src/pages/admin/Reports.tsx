@@ -136,17 +136,14 @@ export default function ReportsPage() {
 
     // Per-day TOTAL visit count drives DA eligibility (flat amount per day)
     const visitsByUserDate: Record<string, number> = {};
-    const docByUserDate: Record<string, number> = {};
     (vRes.data || []).forEach((v: any) => {
-      ensure(v.user_id, v.centre_id);
+      const row = ensure(v.user_id, v.centre_id);
       const k = `${v.user_id}|${v.visit_date}`;
       visitsByUserDate[k] = (visitsByUserDate[k] || 0) + 1;
-      if (v.visitor_type === "doctor") docByUserDate[k] = (docByUserDate[k] || 0) + 1;
-    });
-    Object.entries(docByUserDate).forEach(([k, count]) => {
-      const [uid] = k.split("|");
-      const row = ensure(uid, null);
-      row.doctor_visits += count;
+      row.total_visits += 1;
+      const t = String(v.visitor_type || "other");
+      row.visits_by_type[t] = (row.visits_by_type[t] || 0) + 1;
+      if (v.visitor_type === "doctor") row.doctor_visits += 1;
     });
     Object.entries(visitsByUserDate).forEach(([k, count]) => {
       if (count >= settings.min_doctor_visits_for_da) {
