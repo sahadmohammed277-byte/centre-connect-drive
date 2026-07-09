@@ -192,12 +192,16 @@ export default function ReportsPage() {
       const cid = r.centre_id || "unassigned";
       const cname = centres.find((c) => c.id === cid)?.name || "Unassigned";
       if (!m[cid]) {
-        m[cid] = { ...r, centre_id: cid, centre_name: cname, user_id: cid };
+        m[cid] = { ...r, visits_by_type: { ...r.visits_by_type }, centre_id: cid, centre_name: cname, user_id: cid };
       } else {
         const t = m[cid];
         t.working_days += r.working_days;
         t.total_km += r.total_km;
         t.doctor_visits += r.doctor_visits;
+        t.total_visits += r.total_visits;
+        for (const [k, v] of Object.entries(r.visits_by_type)) {
+          t.visits_by_type[k] = (t.visits_by_type[k] || 0) + v;
+        }
         t.referrals += r.referrals;
         t.cag += r.cag;
         t.ptca += r.ptca;
