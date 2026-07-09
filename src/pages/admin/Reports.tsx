@@ -295,7 +295,7 @@ export default function ReportsPage() {
   const totals = filtered.reduce((acc, r) => ({
     days: acc.days + r.working_days,
     km: acc.km + r.total_km,
-    docs: acc.docs + r.doctor_visits,
+    visits: acc.visits + r.total_visits,
     refs: acc.refs + r.referrals,
     cag: acc.cag + r.cag,
     ptca: acc.ptca + r.ptca,
@@ -303,7 +303,7 @@ export default function ReportsPage() {
     da: acc.da + r.total_da,
     revenue: acc.revenue + r.revenue,
     total: acc.total + r.grand_total,
-  }), { days: 0, km: 0, docs: 0, refs: 0, cag: 0, ptca: 0, ta: 0, da: 0, revenue: 0, total: 0 });
+  }), { days: 0, km: 0, visits: 0, refs: 0, cag: 0, ptca: 0, ta: 0, da: 0, revenue: 0, total: 0 });
 
   return (
     <div className="space-y-6">
