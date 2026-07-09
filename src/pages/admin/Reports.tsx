@@ -118,6 +118,7 @@ export default function ReportsPage() {
         map[uid] = {
           user_id: uid, centre_id,
           working_days: 0, total_km: 0, doctor_visits: 0,
+          total_visits: 0, visits_by_type: {},
           referrals: 0, cag: 0, ptca: 0,
           da_eligible_days: 0, total_ta: 0, total_da: 0, revenue: 0, grand_total: 0,
         };
