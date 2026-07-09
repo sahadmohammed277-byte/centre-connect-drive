@@ -197,7 +197,7 @@ export default function AdminDashboardPage() {
     (r) => r.checkin && r.visitCount > 0 && r.visitCount < 3
   );
   const daAlerts = rows.filter(
-    (r) => r.checkin && r.doctorCount > 0 && r.doctorCount < settings.min_doctor_visits_for_da
+    (r) => r.checkin && r.visitCount > 0 && r.visitCount < settings.min_doctor_visits_for_da
   );
   const allAlerts = middayNoVisitAlerts.length + lowActivityAlerts.length + daAlerts.length;
 
