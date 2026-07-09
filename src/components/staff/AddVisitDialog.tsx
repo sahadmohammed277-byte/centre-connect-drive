@@ -178,9 +178,11 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="doctor">Doctor</SelectItem>
-                <SelectItem value="lab">Lab</SelectItem>
-                <SelectItem value="ambulance_driver">Ambulance Driver</SelectItem>
+                <SelectItem value="ambulance">Ambulance</SelectItem>
                 <SelectItem value="hospital">Hospital</SelectItem>
+                <SelectItem value="lab">Lab</SelectItem>
+                <SelectItem value="kol">KOL</SelectItem>
+                <SelectItem value="pharmacy">Pharmacy</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
