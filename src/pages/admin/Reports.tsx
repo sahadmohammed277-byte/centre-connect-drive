@@ -16,12 +16,25 @@ import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
+const VISIT_TYPES = ["doctor", "ambulance", "ambulance_driver", "hospital", "lab", "kol", "pharmacy", "other"] as const;
+const VISIT_COLUMNS: { key: string; label: string; types: string[] }[] = [
+  { key: "doctor", label: "Doctor", types: ["doctor"] },
+  { key: "ambulance", label: "Ambulance", types: ["ambulance", "ambulance_driver"] },
+  { key: "hospital", label: "Hospital", types: ["hospital"] },
+  { key: "lab", label: "Lab", types: ["lab"] },
+  { key: "kol", label: "KOL", types: ["kol"] },
+  { key: "pharmacy", label: "Pharmacy", types: ["pharmacy"] },
+  { key: "other", label: "Other", types: ["other"] },
+];
+
 type StaffRow = {
   user_id: string;
   centre_id: string | null;
   working_days: number;
   total_km: number;
   doctor_visits: number;
+  total_visits: number;
+  visits_by_type: Record<string, number>;
   referrals: number;
   cag: number;
   ptca: number;
