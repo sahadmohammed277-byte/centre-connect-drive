@@ -16,12 +16,25 @@ import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { DATE_RANGE_PRESETS, getPresetDates, detectPreset, todayISO } from "@/lib/date-range";
 
+const VISIT_TYPES = ["doctor", "ambulance", "ambulance_driver", "hospital", "lab", "kol", "pharmacy", "other"] as const;
+const VISIT_COLUMNS: { key: string; label: string; types: string[] }[] = [
+  { key: "doctor", label: "Doctor", types: ["doctor"] },
+  { key: "ambulance", label: "Ambulance", types: ["ambulance", "ambulance_driver"] },
+  { key: "hospital", label: "Hospital", types: ["hospital"] },
+  { key: "lab", label: "Lab", types: ["lab"] },
+  { key: "kol", label: "KOL", types: ["kol"] },
+  { key: "pharmacy", label: "Pharmacy", types: ["pharmacy"] },
+  { key: "other", label: "Other", types: ["other"] },
+];
+
 type StaffRow = {
   user_id: string;
   centre_id: string | null;
   working_days: number;
   total_km: number;
   doctor_visits: number;
+  total_visits: number;
+  visits_by_type: Record<string, number>;
   referrals: number;
   cag: number;
   ptca: number;
@@ -105,6 +118,7 @@ export default function ReportsPage() {
         map[uid] = {
           user_id: uid, centre_id,
           working_days: 0, total_km: 0, doctor_visits: 0,
+          total_visits: 0, visits_by_type: {},
           referrals: 0, cag: 0, ptca: 0,
           da_eligible_days: 0, total_ta: 0, total_da: 0, revenue: 0, grand_total: 0,
         };
@@ -122,17 +136,14 @@ export default function ReportsPage() {
 
     // Per-day TOTAL visit count drives DA eligibility (flat amount per day)
     const visitsByUserDate: Record<string, number> = {};
-    const docByUserDate: Record<string, number> = {};
     (vRes.data || []).forEach((v: any) => {
-      ensure(v.user_id, v.centre_id);
+      const row = ensure(v.user_id, v.centre_id);
       const k = `${v.user_id}|${v.visit_date}`;
       visitsByUserDate[k] = (visitsByUserDate[k] || 0) + 1;
-      if (v.visitor_type === "doctor") docByUserDate[k] = (docByUserDate[k] || 0) + 1;
-    });
-    Object.entries(docByUserDate).forEach(([k, count]) => {
-      const [uid] = k.split("|");
-      const row = ensure(uid, null);
-      row.doctor_visits += count;
+      row.total_visits += 1;
+      const t = String(v.visitor_type || "other");
+      row.visits_by_type[t] = (row.visits_by_type[t] || 0) + 1;
+      if (v.visitor_type === "doctor") row.doctor_visits += 1;
     });
     Object.entries(visitsByUserDate).forEach(([k, count]) => {
       if (count >= settings.min_doctor_visits_for_da) {
@@ -181,12 +192,16 @@ export default function ReportsPage() {
       const cid = r.centre_id || "unassigned";
       const cname = centres.find((c) => c.id === cid)?.name || "Unassigned";
       if (!m[cid]) {
-        m[cid] = { ...r, centre_id: cid, centre_name: cname, user_id: cid };
+        m[cid] = { ...r, visits_by_type: { ...r.visits_by_type }, centre_id: cid, centre_name: cname, user_id: cid };
       } else {
         const t = m[cid];
         t.working_days += r.working_days;
         t.total_km += r.total_km;
         t.doctor_visits += r.doctor_visits;
+        t.total_visits += r.total_visits;
+        for (const [k, v] of Object.entries(r.visits_by_type)) {
+          t.visits_by_type[k] = (t.visits_by_type[k] || 0) + v;
+        }
         t.referrals += r.referrals;
         t.cag += r.cag;
         t.ptca += r.ptca;
@@ -201,18 +216,26 @@ export default function ReportsPage() {
   })();
 
   function downloadCSV() {
-    const header = ["Staff", "Employee ID", "Centre", "Working Days", "KM", "Doctor Visits", "Referrals", "CAG", "PTCA", "DA Days", "TA (₹)", "DA (₹)", "Revenue (₹)", "Total (₹)"];
+    const header = [
+      "Staff", "Employee ID", "Centre", "Working Days", "KM",
+      ...VISIT_COLUMNS.map((c) => c.label),
+      "Total Visits", "Referrals", "CAG", "PTCA", "DA Days", "TA (₹)", "DA (₹)", "Revenue (₹)", "Total (₹)",
+    ];
     const lines = [header.join(",")];
     filtered.forEach((r) => {
       const p = profiles.find((x) => x.user_id === r.user_id);
       const c = centres.find((x) => x.id === (p?.centre_id || r.centre_id));
+      const byType = VISIT_COLUMNS.map((col) =>
+        col.types.reduce((s, t) => s + (r.visits_by_type[t] || 0), 0)
+      );
       lines.push([
         `"${p?.full_name || ""}"`,
         p?.employee_id || "",
         `"${c?.name || ""}"`,
         r.working_days,
         r.total_km.toFixed(1),
-        r.doctor_visits,
+        ...byType,
+        r.total_visits,
         r.referrals,
         r.cag,
         r.ptca,
@@ -272,7 +295,7 @@ export default function ReportsPage() {
   const totals = filtered.reduce((acc, r) => ({
     days: acc.days + r.working_days,
     km: acc.km + r.total_km,
-    docs: acc.docs + r.doctor_visits,
+    visits: acc.visits + r.total_visits,
     refs: acc.refs + r.referrals,
     cag: acc.cag + r.cag,
     ptca: acc.ptca + r.ptca,
@@ -280,7 +303,7 @@ export default function ReportsPage() {
     da: acc.da + r.total_da,
     revenue: acc.revenue + r.revenue,
     total: acc.total + r.grand_total,
-  }), { days: 0, km: 0, docs: 0, refs: 0, cag: 0, ptca: 0, ta: 0, da: 0, revenue: 0, total: 0 });
+  }), { days: 0, km: 0, visits: 0, refs: 0, cag: 0, ptca: 0, ta: 0, da: 0, revenue: 0, total: 0 });
 
   return (
     <div className="space-y-6">
@@ -360,8 +383,9 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <SummaryTile label="Working Days" value={totals.days} />
+        <SummaryTile label="Total Visits" value={totals.visits} />
         <SummaryTile label="Total Referrals" value={totals.refs} />
         <SummaryTile label="Total CAG" value={totals.cag} />
         <SummaryTile label="Total PTCA" value={totals.ptca} />
@@ -386,9 +410,12 @@ export default function ReportsPage() {
                   <TableRow>
                     <TableHead>Staff</TableHead>
                     <TableHead>Centre</TableHead>
-                    <TableHead className="text-right">Working Days</TableHead>
+                    <TableHead className="text-right">Days</TableHead>
                     <TableHead className="text-right">KM</TableHead>
-                    <TableHead className="text-right">Doctor Visits</TableHead>
+                    {VISIT_COLUMNS.map((col) => (
+                      <TableHead key={col.key} className="text-right">{col.label}</TableHead>
+                    ))}
+                    <TableHead className="text-right font-semibold">Total Visits</TableHead>
                     <TableHead className="text-right">Referrals</TableHead>
                     <TableHead className="text-right">CAG</TableHead>
                     <TableHead className="text-right">PTCA</TableHead>
@@ -409,7 +436,12 @@ export default function ReportsPage() {
                         <TableCell>{c?.name || "—"}</TableCell>
                         <TableCell className="text-right">{r.working_days}</TableCell>
                         <TableCell className="text-right">{r.total_km.toFixed(1)}</TableCell>
-                        <TableCell className="text-right">{r.doctor_visits}</TableCell>
+                        {VISIT_COLUMNS.map((col) => (
+                          <TableCell key={col.key} className="text-right">
+                            {col.types.reduce((s, t) => s + (r.visits_by_type[t] || 0), 0)}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-right font-semibold">{r.total_visits}</TableCell>
                         <TableCell className="text-right">{r.referrals}</TableCell>
                         <TableCell className="text-right">{r.cag}</TableCell>
                         <TableCell className="text-right">{r.ptca}</TableCell>
@@ -438,9 +470,12 @@ export default function ReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Centre</TableHead>
-                    <TableHead className="text-right">Working Days</TableHead>
+                    <TableHead className="text-right">Days</TableHead>
                     <TableHead className="text-right">KM</TableHead>
-                    <TableHead className="text-right">Doctor Visits</TableHead>
+                    {VISIT_COLUMNS.map((col) => (
+                      <TableHead key={col.key} className="text-right">{col.label}</TableHead>
+                    ))}
+                    <TableHead className="text-right font-semibold">Total Visits</TableHead>
                     <TableHead className="text-right">Referrals</TableHead>
                     <TableHead className="text-right">CAG</TableHead>
                     <TableHead className="text-right">PTCA</TableHead>
@@ -456,7 +491,12 @@ export default function ReportsPage() {
                       <TableCell className="font-medium">{r.centre_name}</TableCell>
                       <TableCell className="text-right">{r.working_days}</TableCell>
                       <TableCell className="text-right">{r.total_km.toFixed(1)}</TableCell>
-                      <TableCell className="text-right">{r.doctor_visits}</TableCell>
+                      {VISIT_COLUMNS.map((col) => (
+                        <TableCell key={col.key} className="text-right">
+                          {col.types.reduce((s, t) => s + (r.visits_by_type[t] || 0), 0)}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-semibold">{r.total_visits}</TableCell>
                       <TableCell className="text-right">{r.referrals}</TableCell>
                       <TableCell className="text-right">{r.cag}</TableCell>
                       <TableCell className="text-right">{r.ptca}</TableCell>

@@ -687,7 +687,15 @@ export type Database = {
       procedure_status: "pending" | "done" | "not_done"
       procedure_type: "cag" | "ptca" | "other"
       service_type: "lab" | "opd" | "scan" | "admission"
-      visitor_type: "doctor" | "lab" | "ambulance_driver" | "hospital" | "other"
+      visitor_type:
+        | "doctor"
+        | "lab"
+        | "ambulance_driver"
+        | "hospital"
+        | "other"
+        | "ambulance"
+        | "kol"
+        | "pharmacy"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -826,7 +834,16 @@ export const Constants = {
       procedure_status: ["pending", "done", "not_done"],
       procedure_type: ["cag", "ptca", "other"],
       service_type: ["lab", "opd", "scan", "admission"],
-      visitor_type: ["doctor", "lab", "ambulance_driver", "hospital", "other"],
+      visitor_type: [
+        "doctor",
+        "lab",
+        "ambulance_driver",
+        "hospital",
+        "other",
+        "ambulance",
+        "kol",
+        "pharmacy",
+      ],
     },
   },
 } as const
