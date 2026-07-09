@@ -469,9 +469,12 @@ export default function ReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Centre</TableHead>
-                    <TableHead className="text-right">Working Days</TableHead>
+                    <TableHead className="text-right">Days</TableHead>
                     <TableHead className="text-right">KM</TableHead>
-                    <TableHead className="text-right">Doctor Visits</TableHead>
+                    {VISIT_COLUMNS.map((col) => (
+                      <TableHead key={col.key} className="text-right">{col.label}</TableHead>
+                    ))}
+                    <TableHead className="text-right font-semibold">Total Visits</TableHead>
                     <TableHead className="text-right">Referrals</TableHead>
                     <TableHead className="text-right">CAG</TableHead>
                     <TableHead className="text-right">PTCA</TableHead>
@@ -487,7 +490,12 @@ export default function ReportsPage() {
                       <TableCell className="font-medium">{r.centre_name}</TableCell>
                       <TableCell className="text-right">{r.working_days}</TableCell>
                       <TableCell className="text-right">{r.total_km.toFixed(1)}</TableCell>
-                      <TableCell className="text-right">{r.doctor_visits}</TableCell>
+                      {VISIT_COLUMNS.map((col) => (
+                        <TableCell key={col.key} className="text-right">
+                          {col.types.reduce((s, t) => s + (r.visits_by_type[t] || 0), 0)}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-semibold">{r.total_visits}</TableCell>
                       <TableCell className="text-right">{r.referrals}</TableCell>
                       <TableCell className="text-right">{r.cag}</TableCell>
                       <TableCell className="text-right">{r.ptca}</TableCell>
