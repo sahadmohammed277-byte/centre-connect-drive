@@ -216,18 +216,26 @@ export default function ReportsPage() {
   })();
 
   function downloadCSV() {
-    const header = ["Staff", "Employee ID", "Centre", "Working Days", "KM", "Doctor Visits", "Referrals", "CAG", "PTCA", "DA Days", "TA (₹)", "DA (₹)", "Revenue (₹)", "Total (₹)"];
+    const header = [
+      "Staff", "Employee ID", "Centre", "Working Days", "KM",
+      ...VISIT_COLUMNS.map((c) => c.label),
+      "Total Visits", "Referrals", "CAG", "PTCA", "DA Days", "TA (₹)", "DA (₹)", "Revenue (₹)", "Total (₹)",
+    ];
     const lines = [header.join(",")];
     filtered.forEach((r) => {
       const p = profiles.find((x) => x.user_id === r.user_id);
       const c = centres.find((x) => x.id === (p?.centre_id || r.centre_id));
+      const byType = VISIT_COLUMNS.map((col) =>
+        col.types.reduce((s, t) => s + (r.visits_by_type[t] || 0), 0)
+      );
       lines.push([
         `"${p?.full_name || ""}"`,
         p?.employee_id || "",
         `"${c?.name || ""}"`,
         r.working_days,
         r.total_km.toFixed(1),
-        r.doctor_visits,
+        ...byType,
+        r.total_visits,
         r.referrals,
         r.cag,
         r.ptca,
