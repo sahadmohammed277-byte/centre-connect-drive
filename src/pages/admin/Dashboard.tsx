@@ -564,7 +564,7 @@ export default function AdminDashboardPage() {
                         tone="warning"
                         icon={<HeartHandshake className="h-4 w-4 text-warning shrink-0" />}
                         title={r.profile.full_name}
-                        message={`Only ${r.doctorCount} doctor visit(s) — needs ${settings.min_doctor_visits_for_da} for DA eligibility.`}
+                        message={`Only ${r.visitCount} visit(s) — needs ${settings.min_doctor_visits_for_da} for DA eligibility.`}
                         centre={r.centre?.name}
                       />
                     ))}
