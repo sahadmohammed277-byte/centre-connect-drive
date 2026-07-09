@@ -383,8 +383,9 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <SummaryTile label="Working Days" value={totals.days} />
+        <SummaryTile label="Total Visits" value={totals.visits} />
         <SummaryTile label="Total Referrals" value={totals.refs} />
         <SummaryTile label="Total CAG" value={totals.cag} />
         <SummaryTile label="Total PTCA" value={totals.ptca} />
