@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   CalendarDays,
   FileBarChart,
+  BarChart3,
   CheckCircle2,
   CalendarCheck,
   HeartHandshake,
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/reports", label: "Reports", icon: FileBarChart },
+  { to: "/admin/performance", label: "Performance", icon: BarChart3 },
   { to: "/admin/referrals", label: "Referrals", icon: HeartHandshake },
   { to: "/admin/approvals", label: "Approvals", icon: CheckCircle2 },
   { to: "/admin/leaves", label: "Leave Requests", icon: CalendarCheck },
