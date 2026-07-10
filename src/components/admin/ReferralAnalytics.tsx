@@ -171,14 +171,14 @@ function MiniStat({ icon: Icon, label, value, tone }: { icon: any; label: string
     neutral: "bg-muted text-muted-foreground",
   };
   return (
-    <div className="rounded-lg border bg-card p-3">
-      <div className="flex items-center gap-2">
-        <div className={`flex h-8 w-8 items-center justify-center rounded-md ${toneCls[tone]}`}>
-          <Icon className="h-4 w-4" />
-        </div>
+    <div className="rounded-lg border bg-card shadow-card h-28 p-4 flex flex-col justify-center">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] text-muted-foreground truncate">{label}</p>
-          <p className="text-base font-semibold leading-tight">{value}</p>
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold tracking-tight mt-1 truncate">{value}</p>
+        </div>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${toneCls[tone]}`}>
+          <Icon className="h-4 w-4" />
         </div>
       </div>
     </div>
