@@ -21,6 +21,14 @@ interface Props {
   trigger?: React.ReactNode;
 }
 
+type Suggestion = {
+  name: string;
+  place: string | null;
+  contact_number: string | null;
+  count: number;
+  last: string;
+};
+
 export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
   const { user, profile } = useAuth();
   const [open, setOpen] = useState(false);
@@ -29,6 +37,10 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState("");
   const [referral, setReferral] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<Suggestion[]>([]);
+  const [placeSuggestions, setPlaceSuggestions] = useState<{ place: string; count: number }[]>([]);
+  const [showNameSug, setShowNameSug] = useState(false);
+  const [showPlaceSug, setShowPlaceSug] = useState(false);
   const [form, setForm] = useState({
     visitor_type: "doctor" as VisitorType,
     visitor_name: "",
@@ -61,6 +73,46 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Load suggestions from user's own past visits.
+  useEffect(() => {
+    if (!open || !user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("visits")
+        .select("visitor_type, visitor_name, doctor_name, place, contact_number, visit_date")
+        .eq("user_id", user.id)
+        .order("visit_date", { ascending: false })
+        .limit(500);
+      const rows = (data as any[]) || [];
+
+      // Names aggregated by current visitor_type
+      const nameMap = new Map<string, Suggestion>();
+      rows.filter((r) => r.visitor_type === form.visitor_type).forEach((r) => {
+        const name = (r.visitor_type === "doctor" ? r.doctor_name : r.visitor_name) || "";
+        if (!name) return;
+        const key = name.trim().toLowerCase();
+        const cur = nameMap.get(key) || { name: name.trim(), place: r.place, contact_number: r.contact_number, count: 0, last: r.visit_date };
+        cur.count += 1;
+        if (!cur.place && r.place) cur.place = r.place;
+        if (!cur.contact_number && r.contact_number) cur.contact_number = r.contact_number;
+        if (r.visit_date > cur.last) cur.last = r.visit_date;
+        nameMap.set(key, cur);
+      });
+      setNameSuggestions(Array.from(nameMap.values()).sort((a, b) => b.count - a.count));
+
+      // Places aggregated across all types
+      const placeMap = new Map<string, number>();
+      rows.forEach((r) => {
+        const p = (r.place || "").trim();
+        if (!p) return;
+        placeMap.set(p, (placeMap.get(p) || 0) + 1);
+      });
+      setPlaceSuggestions(Array.from(placeMap.entries()).map(([place, count]) => ({ place, count })).sort((a, b) => b.count - a.count));
+    })();
+  }, [open, user, form.visitor_type]);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,22 +240,94 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
             </Select>
           </div>
 
-          {form.visitor_type === "doctor" ? (
-            <div className="space-y-2">
-              <Label>Doctor Name *</Label>
-              <Input value={form.doctor_name} onChange={set("doctor_name")} required />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Visitor Name *</Label>
-              <Input value={form.visitor_name} onChange={set("visitor_name")} required />
-            </div>
-          )}
+          {(() => {
+            const isDoc = form.visitor_type === "doctor";
+            const nameVal = isDoc ? form.doctor_name : form.visitor_name;
+            const nameKey = isDoc ? "doctor_name" : "visitor_name";
+            const q = nameVal.trim().toLowerCase();
+            const filteredNames = q
+              ? nameSuggestions.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 6)
+              : nameSuggestions.slice(0, 6);
+            return (
+              <div className="space-y-2 relative">
+                <Label>{isDoc ? "Doctor Name *" : "Visitor Name *"}</Label>
+                <Input
+                  value={nameVal}
+                  onChange={set(nameKey)}
+                  onFocus={() => setShowNameSug(true)}
+                  onBlur={() => setTimeout(() => setShowNameSug(false), 150)}
+                  autoComplete="off"
+                  required
+                />
+                {showNameSug && filteredNames.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto">
+                    {filteredNames.map((s) => (
+                      <button
+                        type="button"
+                        key={s.name}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setForm((p) => ({
+                            ...p,
+                            [nameKey]: s.name,
+                            place: p.place || s.place || "",
+                            contact_number: p.contact_number || s.contact_number || "",
+                          }));
+                          setShowNameSug(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted border-b last:border-b-0"
+                      >
+                        <div className="font-medium">{isDoc ? `Dr. ${s.name}` : s.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {s.place || "—"} · Visited {s.count} time{s.count > 1 ? "s" : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label>Place</Label>
-            <Input value={form.place} onChange={set("place")} placeholder="Hospital / clinic / area" />
+            <Input
+              value={form.place}
+              onChange={set("place")}
+              onFocus={() => setShowPlaceSug(true)}
+              onBlur={() => setTimeout(() => setShowPlaceSug(false), 150)}
+              placeholder="Hospital / clinic / area"
+              autoComplete="off"
+            />
+            {showPlaceSug && (() => {
+              const q = form.place.trim().toLowerCase();
+              const list = (q
+                ? placeSuggestions.filter((s) => s.place.toLowerCase().includes(q))
+                : placeSuggestions
+              ).slice(0, 6);
+              if (list.length === 0) return null;
+              return (
+                <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto">
+                  {list.map((s) => (
+                    <button
+                      type="button"
+                      key={s.place}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setForm((p) => ({ ...p, place: s.place }));
+                        setShowPlaceSug(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted border-b last:border-b-0"
+                    >
+                      <div className="font-medium">{s.place}</div>
+                      <div className="text-xs text-muted-foreground">Previously visited {s.count} time{s.count > 1 ? "s" : ""}</div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
+
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
