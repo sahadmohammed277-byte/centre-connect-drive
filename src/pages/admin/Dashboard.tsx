@@ -628,9 +628,9 @@ function StatCard({ icon: Icon, label, value, tone }: { icon: any; label: string
     neutral: "bg-muted text-foreground/70",
   };
   return (
-    <Card className="shadow-card border-border/60 hover:shadow-card-hover transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
+    <Card className="shadow-card border-border/60 hover:shadow-card-hover transition-shadow h-28">
+      <CardContent className="p-4 h-full flex flex-col justify-center">
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">{label}</p>
             <p className="text-2xl font-bold tracking-tight mt-1 truncate">{value}</p>
