@@ -21,6 +21,14 @@ interface Props {
   trigger?: React.ReactNode;
 }
 
+type Suggestion = {
+  name: string;
+  place: string | null;
+  contact_number: string | null;
+  count: number;
+  last: string;
+};
+
 export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
   const { user, profile } = useAuth();
   const [open, setOpen] = useState(false);
@@ -29,6 +37,10 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsError, setGpsError] = useState("");
   const [referral, setReferral] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<Suggestion[]>([]);
+  const [placeSuggestions, setPlaceSuggestions] = useState<{ place: string; count: number }[]>([]);
+  const [showNameSug, setShowNameSug] = useState(false);
+  const [showPlaceSug, setShowPlaceSug] = useState(false);
   const [form, setForm] = useState({
     visitor_type: "doctor" as VisitorType,
     visitor_name: "",
