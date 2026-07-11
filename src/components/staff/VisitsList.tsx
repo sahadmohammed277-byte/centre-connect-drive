@@ -27,7 +27,6 @@ interface Props {
 export default function VisitsList({ checkinId, refreshKey }: Props) {
   const { user } = useAuth();
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [bump, setBump] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -39,22 +38,8 @@ export default function VisitsList({ checkinId, refreshKey }: Props) {
       .then(({ data }) => {
         if (data) setVisits(data as Visit[]);
       });
-  }, [checkinId, user, refreshKey, bump]);
+  }, [checkinId, user, refreshKey]);
 
-  const handleCheckout = async (visit: Visit) => {
-    try {
-      const pos = await getCurrentPosition();
-      const { error } = await supabase
-        .from("visits")
-        .update({ checkout_time: new Date().toISOString() })
-        .eq("id", visit.id);
-      if (error) throw error;
-      toast.success("Visit checked out");
-      setBump((b) => b + 1);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to check out visit");
-    }
-  };
 
   if (visits.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-4">No visits logged yet.</p>;
