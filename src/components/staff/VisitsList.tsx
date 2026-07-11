@@ -27,17 +27,23 @@ interface Props {
 export default function VisitsList({ checkinId, refreshKey }: Props) {
   const { user } = useAuth();
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [referralKeys, setReferralKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("visits")
-      .select("*")
-      .eq("checkin_id", checkinId)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) setVisits(data as Visit[]);
+    (async () => {
+      const [{ data: vs }, { data: rs }] = await Promise.all([
+        supabase.from("visits").select("*").eq("checkin_id", checkinId).order("created_at", { ascending: false }),
+        supabase.from("referrals").select("referral_centre, hospital_name").eq("checkin_id", checkinId),
+      ]);
+      if (vs) setVisits(vs as Visit[]);
+      const keys = new Set<string>();
+      (rs || []).forEach((r: any) => {
+        const name = (r.referral_centre || "").trim().toLowerCase();
+        if (name) keys.add(name);
       });
+      setReferralKeys(keys);
+    })();
   }, [checkinId, user, refreshKey]);
 
 
@@ -49,6 +55,7 @@ export default function VisitsList({ checkinId, refreshKey }: Props) {
     <div className="space-y-2">
       {visits.map((v) => {
         const name = v.doctor_name || v.visitor_name;
+        const isReferral = referralKeys.has((name || "").trim().toLowerCase());
         return (
           <div key={v.id} className="rounded-lg bg-card border p-3 space-y-2">
             <div className="flex items-start gap-3">
@@ -70,11 +77,21 @@ export default function VisitsList({ checkinId, refreshKey }: Props) {
                 {v.visitor_type.replace("_", " ")}
               </Badge>
             </div>
-            <div className="flex items-center text-xs text-muted-foreground border-t pt-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {v.checkin_time ? new Date(v.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
               </span>
+              <div className="flex items-center gap-1.5">
+                {isReferral && (
+                  <Badge className="text-[10px] h-5 bg-primary/10 text-primary hover:bg-primary/10 border-0">
+                    Referral
+                  </Badge>
+                )}
+                <Badge className="text-[10px] h-5 bg-success/10 text-success hover:bg-success/10 border-0">
+                  Completed
+                </Badge>
+              </div>
             </div>
           </div>
         );

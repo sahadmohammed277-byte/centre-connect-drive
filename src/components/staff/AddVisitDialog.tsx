@@ -146,6 +146,7 @@ export default function AddVisitDialog({ checkinId, onAdded, trigger }: Props) {
       visit_lat: coords?.lat ?? null,
       visit_lng: coords?.lng ?? null,
       checkin_time: new Date().toISOString(),
+      checkout_time: new Date().toISOString(),
     });
 
     if (error) {
