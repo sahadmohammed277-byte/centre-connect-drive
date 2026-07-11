@@ -2,11 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Stethoscope, FlaskConical, Ambulance, Building2, User, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { Stethoscope, FlaskConical, Ambulance, Building2, User, MapPin, Clock } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import { getCurrentPosition } from "@/lib/geo";
-import { toast } from "sonner";
 
 type Visit = Database["public"]["Tables"]["visits"]["Row"] & {
   doctor_name?: string | null;
