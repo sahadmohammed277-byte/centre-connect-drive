@@ -23,15 +23,6 @@ interface Props {
   refreshKey?: number;
 }
 
-function formatDuration(start: string, end: string) {
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms <= 0) return "0m";
-  const mins = Math.round(ms / 60000);
-  if (mins < 60) return `${mins}m`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h}h ${m}m`;
-}
 
 export default function VisitsList({ checkinId, refreshKey }: Props) {
   const { user } = useAuth();
