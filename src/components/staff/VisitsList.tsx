@@ -49,7 +49,6 @@ export default function VisitsList({ checkinId, refreshKey }: Props) {
     <div className="space-y-2">
       {visits.map((v) => {
         const name = v.doctor_name || v.visitor_name;
-        const checkedOut = !!v.checkout_time;
         return (
           <div key={v.id} className="rounded-lg bg-card border p-3 space-y-2">
             <div className="flex items-start gap-3">
@@ -71,28 +70,11 @@ export default function VisitsList({ checkinId, refreshKey }: Props) {
                 {v.visitor_type.replace("_", " ")}
               </Badge>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
+            <div className="flex items-center text-xs text-muted-foreground border-t pt-2">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                In: {v.checkin_time ? new Date(v.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
-                {checkedOut && (
-                  <>
-                    {" · Out: "}
-                    {new Date(v.checkout_time!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    {" · "}
-                    <span className="font-medium text-foreground">{formatDuration(v.checkin_time!, v.checkout_time!)}</span>
-                  </>
-                )}
+                {v.checkin_time ? new Date(v.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
               </span>
-              {checkedOut ? (
-                <span className="flex items-center gap-1 text-success">
-                  <CheckCircle2 className="h-3 w-3" /> Done
-                </span>
-              ) : (
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleCheckout(v)}>
-                  Check out
-                </Button>
-              )}
             </div>
           </div>
         );
