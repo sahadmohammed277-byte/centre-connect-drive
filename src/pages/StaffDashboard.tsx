@@ -12,10 +12,12 @@ import PaymentsSummary from "@/components/staff/PaymentsSummary";
 import LeaveList from "@/components/staff/LeaveList";
 import ActivityFeed from "@/components/staff/ActivityFeed";
 import WeeklySummary from "@/components/staff/WeeklySummary";
+import MonthlyActivitiesList from "@/components/staff/MonthlyActivitiesList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartHandshake, Wallet, CalendarDays } from "lucide-react";
+import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartHandshake, Wallet, CalendarDays, CalendarClock } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 
 export default function StaffDashboard() {
@@ -69,23 +71,27 @@ export default function StaffDashboard() {
       {/* Content */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-24">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
-            <TabsTrigger value="dashboard" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+          <TabsList className="grid w-full grid-cols-6 mb-4">
+            <TabsTrigger value="dashboard" className="flex flex-col items-center gap-0.5 py-2 text-[10px]">
               <LayoutDashboard className="h-4 w-4" /> Home
             </TabsTrigger>
-            <TabsTrigger value="visits" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+            <TabsTrigger value="visits" className="flex flex-col items-center gap-0.5 py-2 text-[10px]">
               <Stethoscope className="h-4 w-4" /> Visits
             </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+            <TabsTrigger value="referrals" className="flex flex-col items-center gap-0.5 py-2 text-[10px]">
               <HeartHandshake className="h-4 w-4" /> Referrals
             </TabsTrigger>
-            <TabsTrigger value="payments" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+            <TabsTrigger value="payments" className="flex flex-col items-center gap-0.5 py-2 text-[10px]">
               <Wallet className="h-4 w-4" /> Payments
             </TabsTrigger>
-            <TabsTrigger value="leave" className="flex flex-col items-center gap-0.5 py-2 text-[11px]">
+            <TabsTrigger value="activities" className="flex flex-col items-center gap-0.5 py-2 text-[10px]">
+              <CalendarClock className="h-4 w-4" /> Monthly
+            </TabsTrigger>
+            <TabsTrigger value="leave" className="flex flex-col items-center gap-0.5 py-2 text-[10px]">
               <CalendarDays className="h-4 w-4" /> Leave
             </TabsTrigger>
           </TabsList>
+
 
           {/* Dashboard */}
           <TabsContent value="dashboard" className="space-y-4 mt-0">
@@ -148,6 +154,11 @@ export default function StaffDashboard() {
             <PaymentsSummary refreshKey={refreshKey} onChanged={refresh} />
           </TabsContent>
 
+          {/* Monthly Activities */}
+          <TabsContent value="activities" className="space-y-4 mt-0">
+            <MonthlyActivitiesList refreshKey={refreshKey} onChanged={refresh} />
+          </TabsContent>
+
           {/* Leave */}
           <TabsContent value="leave" className="space-y-4 mt-0">
             <div className="flex items-center justify-between">
@@ -161,3 +172,4 @@ export default function StaffDashboard() {
     </div>
   );
 }
+

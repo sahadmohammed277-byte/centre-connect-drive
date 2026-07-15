@@ -17,6 +17,7 @@ import DailyActivityPage from "./pages/admin/DailyActivity";
 import ReportsPage from "./pages/admin/Reports";
 import PerformancePage from "./pages/admin/Performance";
 import ApprovalsPage from "./pages/admin/Approvals";
+import MonthlyActivitiesPage from "./pages/admin/MonthlyActivities";
 import LeaveApprovalsPage from "./pages/admin/LeaveApprovals";
 import ReferralsPage from "./pages/admin/Referrals";
 import SettingsPage from "./pages/admin/Settings";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="reports" element={<ReportsPage />} />
               <Route path="performance" element={<PerformancePage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
+              <Route path="monthly-activities" element={<MonthlyActivitiesPage />} />
               <Route path="leaves" element={<LeaveApprovalsPage />} />
               <Route path="referrals" element={<ReferralsPage />} />
               <Route path="settings" element={<SettingsPage />} />

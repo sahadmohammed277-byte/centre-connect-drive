@@ -253,6 +253,65 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_activities: {
+        Row: {
+          activity_date: string
+          activity_name: string
+          centre_id: string | null
+          completion_date: string | null
+          completion_notes: string | null
+          completion_photo_url: string | null
+          created_at: string
+          expected_completion_date: string
+          id: string
+          location: string | null
+          notes: string | null
+          staff_id: string
+          status: Database["public"]["Enums"]["activity_status"]
+          updated_at: string
+        }
+        Insert: {
+          activity_date: string
+          activity_name: string
+          centre_id?: string | null
+          completion_date?: string | null
+          completion_notes?: string | null
+          completion_photo_url?: string | null
+          created_at?: string
+          expected_completion_date: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          staff_id: string
+          status?: Database["public"]["Enums"]["activity_status"]
+          updated_at?: string
+        }
+        Update: {
+          activity_date?: string
+          activity_name?: string
+          centre_id?: string | null
+          completion_date?: string | null
+          completion_notes?: string | null
+          completion_photo_url?: string | null
+          created_at?: string
+          expected_completion_date?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          staff_id?: string
+          status?: Database["public"]["Enums"]["activity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_activities_centre_id_fkey"
+            columns: ["centre_id"]
+            isOneToOne: false
+            referencedRelation: "centres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_claims: {
         Row: {
           admin_comments: string | null
@@ -676,6 +735,7 @@ export type Database = {
       is_staff: { Args: never; Returns: boolean }
     }
     Enums: {
+      activity_status: "planning" | "completed" | "cancelled"
       app_role: "admin" | "staff"
       claim_status: "draft" | "submitted" | "approved" | "rejected"
       km_entry_type: "gps" | "manual"
@@ -823,6 +883,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_status: ["planning", "completed", "cancelled"],
       app_role: ["admin", "staff"],
       claim_status: ["draft", "submitted", "approved", "rejected"],
       km_entry_type: ["gps", "manual"],
