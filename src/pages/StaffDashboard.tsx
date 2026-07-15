@@ -12,10 +12,12 @@ import PaymentsSummary from "@/components/staff/PaymentsSummary";
 import LeaveList from "@/components/staff/LeaveList";
 import ActivityFeed from "@/components/staff/ActivityFeed";
 import WeeklySummary from "@/components/staff/WeeklySummary";
+import MonthlyActivitiesList from "@/components/staff/MonthlyActivitiesList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartHandshake, Wallet, CalendarDays } from "lucide-react";
+import { LogOut, Bell, LayoutDashboard, Stethoscope, HeartHandshake, Wallet, CalendarDays, CalendarClock } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 
 export default function StaffDashboard() {
