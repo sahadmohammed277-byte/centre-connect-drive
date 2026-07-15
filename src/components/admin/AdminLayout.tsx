@@ -11,6 +11,7 @@ import {
   FileBarChart,
   BarChart3,
   CheckCircle2,
+  CalendarClock,
   CalendarCheck,
   HeartHandshake,
   Settings as SettingsIcon,
