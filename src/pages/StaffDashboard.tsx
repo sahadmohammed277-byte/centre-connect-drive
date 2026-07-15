@@ -154,6 +154,11 @@ export default function StaffDashboard() {
             <PaymentsSummary refreshKey={refreshKey} onChanged={refresh} />
           </TabsContent>
 
+          {/* Monthly Activities */}
+          <TabsContent value="activities" className="space-y-4 mt-0">
+            <MonthlyActivitiesList refreshKey={refreshKey} onChanged={refresh} />
+          </TabsContent>
+
           {/* Leave */}
           <TabsContent value="leave" className="space-y-4 mt-0">
             <div className="flex items-center justify-between">
@@ -167,3 +172,4 @@ export default function StaffDashboard() {
     </div>
   );
 }
+
