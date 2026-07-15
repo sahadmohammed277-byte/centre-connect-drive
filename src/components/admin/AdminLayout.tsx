@@ -35,7 +35,7 @@ const items = [
   { to: "/admin/reports", label: "Reports", icon: FileBarChart },
   { to: "/admin/performance", label: "Performance", icon: BarChart3 },
   { to: "/admin/referrals", label: "Referrals", icon: HeartHandshake },
-  { to: "/admin/approvals", label: "Approvals", icon: CheckCircle2 },
+  { to: "/admin/monthly-activities", label: "Monthly Activities", icon: CalendarClock },
   { to: "/admin/leaves", label: "Leave Requests", icon: CalendarCheck },
   { to: "/admin/centres", label: "Centres", icon: Building2 },
   { to: "/admin/activity", label: "Daily Activity", icon: CalendarDays },
