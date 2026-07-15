@@ -17,6 +17,7 @@ import DailyActivityPage from "./pages/admin/DailyActivity";
 import ReportsPage from "./pages/admin/Reports";
 import PerformancePage from "./pages/admin/Performance";
 import ApprovalsPage from "./pages/admin/Approvals";
+import MonthlyActivitiesPage from "./pages/admin/MonthlyActivities";
 import LeaveApprovalsPage from "./pages/admin/LeaveApprovals";
 import ReferralsPage from "./pages/admin/Referrals";
 import SettingsPage from "./pages/admin/Settings";
