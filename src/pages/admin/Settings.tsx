@@ -97,7 +97,7 @@ export default function SettingsPage() {
     try {
       const { error } = await (supabase as any).rpc("reset_system_data");
       if (error) throw error;
-      toast.success("System has been successfully reset and is ready for production.");
+      toast.success("✅ Factory Reset Completed Successfully. The software is now ready for production use.");
       setResetOpen(false);
       setResetConfirm("");
     } catch (e: any) {
@@ -219,30 +219,32 @@ export default function SettingsPage() {
         <Card className="border-destructive/40">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" /> System Reset
+              <AlertTriangle className="h-5 w-5" /> Factory Reset
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Danger zone — Super Admin only. Wipes all operational/test data before going to production.
-              Accounts, centres, roles, and configuration are preserved.
+              Danger zone — Super Admin only. Permanently removes all operational data and prepares the software as a fresh production system.
+              Accounts, centres, masters, and configuration are preserved.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
-              <p className="font-medium text-destructive">Warning! This action will permanently delete all operational data. This cannot be undone.</p>
+              <p className="font-medium text-destructive">⚠️ This action will permanently delete all operational data from the system. This action cannot be undone.</p>
               <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground space-y-0.5">
-                <li>Daily Visits, GPS/KM tracking, TA & DA records</li>
-                <li>Referrals & referral status history</li>
+                <li>Daily Visits, Check-In/Out & Attendance logs</li>
+                <li>GPS / KM tracking, TA & DA records</li>
+                <li>Referrals, referral status history & attachments</li>
                 <li>Monthly Activities, Monthly Claims, Payments</li>
-                <li>Leave Requests, Notifications, Audit Logs</li>
+                <li>Leave Requests, Notifications, Activity/Audit Logs</li>
+                <li>Uploaded activity photos & temporary files</li>
                 <li>Dashboard, Reports & Performance statistics</li>
               </ul>
               <p className="mt-2 text-xs text-muted-foreground">
-                Preserved: Admin & staff accounts, centres, rate configuration, roles & permissions, settings.
+                Preserved: Super Admin, Admin & Staff accounts, Centres, Hospitals, Doctor & Referral Person masters, Roles & Permissions, TA/DA & system configuration.
               </p>
             </div>
             <div className="flex justify-end">
               <Button variant="destructive" onClick={() => { setResetConfirm(""); setResetOpen(true); }}>
-                Reset System Data
+                Factory Reset
               </Button>
             </div>
           </CardContent>
@@ -253,11 +255,11 @@ export default function SettingsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" /> Confirm System Reset
+              <AlertTriangle className="h-5 w-5" /> Confirm Factory Reset
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all operational data. This cannot be undone.
-              Type <span className="font-mono font-semibold text-foreground">RESET</span> below to enable the confirm button.
+              This will permanently delete all operational data from the system. This action cannot be undone.
+              To continue, type <span className="font-mono font-semibold text-foreground">RESET</span> below to enable the button.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-2">
@@ -275,7 +277,7 @@ export default function SettingsPage() {
               disabled={resetConfirm !== "RESET" || resetting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {resetting ? "Resetting…" : "Confirm Reset"}
+              {resetting ? "Resetting…" : "Factory Reset"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
