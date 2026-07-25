@@ -255,11 +255,11 @@ export default function SettingsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" /> Confirm System Reset
+              <AlertTriangle className="h-5 w-5" /> Confirm Factory Reset
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all operational data. This cannot be undone.
-              Type <span className="font-mono font-semibold text-foreground">RESET</span> below to enable the confirm button.
+              This will permanently delete all operational data from the system. This action cannot be undone.
+              To continue, type <span className="font-mono font-semibold text-foreground">RESET</span> below to enable the button.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-2">
@@ -277,7 +277,7 @@ export default function SettingsPage() {
               disabled={resetConfirm !== "RESET" || resetting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {resetting ? "Resetting…" : "Confirm Reset"}
+              {resetting ? "Resetting…" : "Factory Reset"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
