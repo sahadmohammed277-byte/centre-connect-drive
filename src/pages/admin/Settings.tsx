@@ -97,7 +97,7 @@ export default function SettingsPage() {
     try {
       const { error } = await (supabase as any).rpc("reset_system_data");
       if (error) throw error;
-      toast.success("System has been successfully reset and is ready for production.");
+      toast.success("✅ Factory Reset Completed Successfully. The software is now ready for production use.");
       setResetOpen(false);
       setResetConfirm("");
     } catch (e: any) {
