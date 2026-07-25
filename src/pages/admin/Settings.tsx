@@ -214,6 +214,72 @@ export default function SettingsPage() {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</Button>
       </div>
+
+      {role === "admin" && (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" /> System Reset
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Danger zone — Super Admin only. Wipes all operational/test data before going to production.
+              Accounts, centres, roles, and configuration are preserved.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+              <p className="font-medium text-destructive">Warning! This action will permanently delete all operational data. This cannot be undone.</p>
+              <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground space-y-0.5">
+                <li>Daily Visits, GPS/KM tracking, TA & DA records</li>
+                <li>Referrals & referral status history</li>
+                <li>Monthly Activities, Monthly Claims, Payments</li>
+                <li>Leave Requests, Notifications, Audit Logs</li>
+                <li>Dashboard, Reports & Performance statistics</li>
+              </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Preserved: Admin & staff accounts, centres, rate configuration, roles & permissions, settings.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="destructive" onClick={() => { setResetConfirm(""); setResetOpen(true); }}>
+                Reset System Data
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" /> Confirm System Reset
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all operational data. This cannot be undone.
+              Type <span className="font-mono font-semibold text-foreground">RESET</span> below to enable the confirm button.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Input
+              autoFocus
+              placeholder="Type RESET to confirm"
+              value={resetConfirm}
+              onChange={(e) => setResetConfirm(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); performReset(); }}
+              disabled={resetConfirm !== "RESET" || resetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? "Resetting…" : "Confirm Reset"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
