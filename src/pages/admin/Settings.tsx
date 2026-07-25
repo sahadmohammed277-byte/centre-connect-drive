@@ -18,12 +18,17 @@ import {
 type RateRow = { centre_id: string; centre_name: string; cag_rate: number; ptca_rate: number };
 
 export default function SettingsPage() {
+  const { role } = useAuth();
   const [s, setS] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [rates, setRates] = useState<RateRow[]>([]);
   const [savingRates, setSavingRates] = useState(false);
+
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetchSettings().then((v) => { setS(v); setLoading(false); });
