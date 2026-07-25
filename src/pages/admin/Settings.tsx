@@ -92,6 +92,21 @@ export default function SettingsPage() {
     }
   }
 
+  async function performReset() {
+    setResetting(true);
+    try {
+      const { error } = await (supabase as any).rpc("reset_system_data");
+      if (error) throw error;
+      toast.success("System has been successfully reset and is ready for production.");
+      setResetOpen(false);
+      setResetConfirm("");
+    } catch (e: any) {
+      toast.error(e.message || "Reset failed");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Loading…</div>;
 
   return (
