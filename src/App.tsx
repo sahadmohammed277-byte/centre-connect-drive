@@ -21,6 +21,7 @@ import MonthlyActivitiesPage from "./pages/admin/MonthlyActivities";
 import LeaveApprovalsPage from "./pages/admin/LeaveApprovals";
 import ReferralsPage from "./pages/admin/Referrals";
 import SettingsPage from "./pages/admin/Settings";
+import OAuthConsent from "./pages/OAuthConsent";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route
               path="/admin"
