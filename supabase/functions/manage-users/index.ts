@@ -104,7 +104,12 @@ serve(async (req) => {
         });
         if (updErr) {
           console.error("Password reset error:", updErr);
-          return json({ error: "Failed to update password" }, 400);
+          const msg = updErr.message?.toLowerCase() ?? "";
+          const safe =
+            (updErr as { code?: string }).code === "weak_password" || msg.includes("weak")
+              ? "This password is too common or easy to guess. Choose a stronger one."
+              : "Failed to update password";
+          return json({ error: safe }, 400);
         }
         await supabaseAdmin.from("audit_logs").insert({
           action: "reset_password",
@@ -148,9 +153,11 @@ serve(async (req) => {
 
       if (authError || !authUser?.user) {
         console.error("Auth create error:", authError);
-        const safe = authError?.message?.toLowerCase().includes("registered")
-          ? "Email already in use"
-          : "Failed to create account";
+        const msg = authError?.message?.toLowerCase() ?? "";
+        let safe = "Failed to create account";
+        if (msg.includes("registered") || msg.includes("already been")) safe = "Email already in use";
+        else if ((authError as { code?: string } | null)?.code === "weak_password" || msg.includes("weak"))
+          safe = "This password is too common or easy to guess. Use the Generate button for a strong password.";
         return json({ error: safe }, 400);
       }
 
