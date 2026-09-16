@@ -37,11 +37,18 @@ export default function AdminsPage() {
     setLoading(false);
   }
 
+  function genPassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+    const bytes = new Uint32Array(14);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  }
+
   function openNew() {
     setForm({
       full_name: "",
       employee_id: "ADM-" + Math.random().toString(36).slice(2, 7).toUpperCase(),
-      email: "", password: "", phone: "",
+      email: "", password: genPassword(), phone: "",
     });
     setOpen(true);
   }
@@ -122,7 +129,12 @@ export default function AdminsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Initial Password</Label>
-                <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                <div className="flex gap-2">
+                  <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                  <Button type="button" variant="outline" onClick={() => setForm({ ...form, password: genPassword() })}>
+                    Generate
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 Role: <strong>Super Admin</strong> — full system access.

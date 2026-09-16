@@ -64,10 +64,17 @@ export default function StaffPage() {
     return "STF-" + Math.random().toString(36).slice(2, 7).toUpperCase();
   }
 
+  function genPassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+    const bytes = new Uint32Array(14);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  }
+
   function openNew() {
     setForm({
       full_name: "", employee_id: genEmployeeId(), phone: "",
-      email: "", password: "", centre_id: "",
+      email: "", password: genPassword(), centre_id: "",
     });
     setOpen(true);
   }
@@ -169,7 +176,15 @@ export default function StaffPage() {
               </div>
               <div className="space-y-2">
                 <Label>Initial Password</Label>
-                <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 8 chars" />
+                <div className="flex gap-2">
+                  <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 8 chars" />
+                  <Button type="button" variant="outline" onClick={() => setForm({ ...form, password: genPassword() })}>
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Avoid common passwords like "password123" — they are rejected. Share this password with the staff member.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Assigned Centre <span className="text-xs text-muted-foreground">(locked after creation)</span></Label>
